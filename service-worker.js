@@ -3,8 +3,8 @@
 
 // キャッシュの名前にバージョン番号をつける。
 // 問題データやコードを更新したら、このバージョン番号を上げること。
-const CACHE_VERSION = 'v17';
-const CACHE_NAME = `pharmacy-quiz-${CACHE_VERSION}`;
+const CACHE_VERSION = 'v1';
+const CACHE_NAME = `tea-quiz-${CACHE_VERSION}`;
 
 // オフラインでも表示できるようにしておきたいファイルの一覧
 const APP_SHELL_FILES = [
@@ -15,11 +15,9 @@ const APP_SHELL_FILES = [
   './js/quiz-engine.js',
   './js/storage.js',
   './js/stats.js',
-  './js/report-code.js',
-  './js/report-sync.js',
+  './js/mock-exam.js',
   './data/questions.json',
   './data/categories.json',
-  './data/report-endpoint.json',
   './manifest.json',
   './icons/icon.svg',
 ];
@@ -47,7 +45,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key.startsWith('pharmacy-quiz-') && key !== CACHE_NAME)
+          .filter((key) => key.startsWith('tea-quiz-') && key !== CACHE_NAME)
           .map((key) => caches.delete(key))
       )
     )

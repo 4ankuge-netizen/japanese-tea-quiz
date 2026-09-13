@@ -1365,7 +1365,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Consumes: Task 2 の分野ID10種
 - Produces: `--cat-history` 〜 `--cat-inspection` の10色（明るい画面用・暗い画面用の両方）
 
-- [ ] **Step 1: css/style.css の分野色を差し替える**
+- [x] **Step 1: css/style.css の分野色を差し替える**
 
 `:root` の中にある `--cat-cancer` から `--cat-prescription-query` までの12行を、次の10行に置き換える。日本の伝統色から、茶に縁のある色を選んでいる。
 
@@ -1383,7 +1383,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
   --cat-default: var(--green-500); /* 万一分野が増えたときの予備 */
 ```
 
-- [ ] **Step 2: 暗い画面用の色も差し替える**
+- [x] **Step 2: 暗い画面用の色も差し替える**
 
 `@media (prefers-color-scheme: dark)` の中にある `--cat-cancer` 〜 `--cat-prescription-query` の12行を、次の10行に置き換える。暗い背景でも読めるよう、明るめにしてある。
 
@@ -1400,7 +1400,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
     --cat-inspection: #E08D9F;
 ```
 
-- [ ] **Step 3: manifest.json を書き替える**
+- [x] **Step 3: manifest.json を書き替える**
 
 ```json
 {
@@ -1416,11 +1416,11 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 }
 ```
 
-- [ ] **Step 4: index.html の theme-color をそろえる**
+- [x] **Step 4: index.html の theme-color をそろえる**
 
 `<meta name="theme-color" content="#1B2A4A">` を `<meta name="theme-color" content="#1F8A70">` に変える。
 
-- [ ] **Step 5: service-worker.js を書き替える**
+- [x] **Step 5: service-worker.js を書き替える**
 
 先頭の定数を次に置き換える。
 
@@ -1450,13 +1450,13 @@ const APP_SHELL_FILES = [
           .filter((key) => key.startsWith('tea-quiz-') && key !== CACHE_NAME)
 ```
 
-- [ ] **Step 6: アイコンを日本茶らしくする**
+- [x] **Step 6: アイコンを日本茶らしくする**
 
 `icons/icon.svg` を、湯呑みから湯気が立つ図柄に差し替える。
 背景は `#1F8A70` の角丸四角、図柄は白（`#FFFFFF`）の線。
 ホーム画面に小さく並んだときに何のアプリか分かればよいので、複雑な絵にしない。
 
-- [ ] **Step 7: ブラウザで見た目を確かめる**
+- [x] **Step 7: ブラウザで見た目を確かめる**
 
 `data/questions.json` に、10分野すべてに1問ずつ入れた確認用データを用意する。
 各問は `"question": "確認用"`、`"choices": ["あ","い","う","え","お"]`、`"correctIndex": 0`、
@@ -1469,11 +1469,11 @@ npm start
 
 期待: ホーム画面に10分野が並び、それぞれ別の色の印が付く。端末を暗い表示に切り替えても文字が読める。
 
-- [ ] **Step 8: 確認用の問題を消して空に戻す**
+- [x] **Step 8: 確認用の問題を消して空に戻す**
 
 `data/questions.json` を `[]` に戻す。
 
-- [ ] **Step 9: テストを実行する**
+- [x] **Step 9: テストを実行する**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -1482,7 +1482,7 @@ node --test
 
 期待: PASS。
 
-- [ ] **Step 10: コミット**
+- [x] **Step 10: コミット**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"

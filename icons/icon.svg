@@ -1,4 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#2f6fed"/>
-  <text x="256" y="320" font-size="220" text-anchor="middle" fill="white" font-family="sans-serif">薬</text>
+  <!-- ホーム画面に小さく並んだときに何のアプリか分かればよいので、
+       湯呑みと湯気だけの単純な形にしている -->
+  <rect width="512" height="512" rx="96" fill="#1F8A70"/>
+
+  <!-- 湯気 -->
+  <g stroke="#FFFFFF" stroke-width="13" stroke-linecap="round" fill="none" opacity="0.85">
+    <path d="M214 196c16-18 16-30 0-48s-16-30 0-48"/>
+    <path d="M298 196c16-18 16-30 0-48s-16-30 0-48"/>
+  </g>
+
+  <!-- 湯呑み(取っ手のない日本の茶碗の形) -->
+  <path d="M160 236h192l-22 122c-5 28-18 38-44 38h-60c-26 0-39-10-44-38z" fill="#FFFFFF"/>
+
+  <!-- 茶托 -->
+  <path d="M132 424q124 34 248 0" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" fill="none"/>
 </svg>
