@@ -1,15 +1,16 @@
 // 出題する問題を選んだり、正解かどうかを判定したりするための部品です。
 // 画面の見た目(HTML)には一切関わらず、データの計算だけを行います。
 
-// カテゴリーや難易度で問題を絞り込む関数
-// categoryId と difficulty の両方を指定することもできます
-export function filterQuestions(questions, { categoryId, difficulty } = {}) {
+// 分野で問題を絞り込む関数。
+// categoryId を省いた場合(または空の場合)は、すべての問題を返す。
+//
+// 本番の試験に難易度の区分はないため、この試験対策アプリでは
+// 難易度による絞り込みは用意していない
+export function filterQuestions(questions, { categoryId } = {}) {
   return questions.filter((q) => {
-    // カテゴリーIDが指定されていて、この問題が異なるカテゴリーならスキップ
+    // 分野が指定されていて、この問題が別の分野ならスキップ
     if (categoryId && q.category !== categoryId) return false;
-    // 難易度が指定されていて、この問題が異なる難易度ならスキップ
-    if (difficulty && q.difficulty !== difficulty) return false;
-    // どちらにも合致したのでこの問題を含める
+    // 合致したのでこの問題を含める
     return true;
   });
 }

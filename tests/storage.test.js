@@ -64,7 +64,7 @@ test('同じ日に何度答えてもストリークは増えない', () => {
 
 // ---------------------------------------------------------------------------
 // 利用者(プロフィール)ごとに記録が分かれることの確認。
-// 1台の端末を実習生が交代で使うため、ここが混ざると成績が意味をなさなくなる
+// 記録は利用者ごとに分けて保存する仕組みなので、ここが混ざると成績が意味をなさなくなる
 // ---------------------------------------------------------------------------
 
 test('最初に使うときは利用者が1人用意される', () => {
@@ -148,7 +148,7 @@ test('利用者の名前を変更できる(空の名前は受け付けない)', 
 test('利用者を分ける前のデータは、1人目に引き継がれる', () => {
   const backend = createFakeBackend();
   // 利用者の区別が無かった頃の形式で、あらかじめ履歴を置いておく
-  backend.setItem('pharmacyQuiz.history', JSON.stringify({ q1: { lastResult: 'correct', correctCount: 1, wrongCount: 0 } }));
+  backend.setItem('teaQuiz.history', JSON.stringify({ q1: { lastResult: 'correct', correctCount: 1, wrongCount: 0 } }));
 
   const storage = createStorage(backend);
   assert.equal(storage.getHistory().q1.lastResult, 'correct');
@@ -166,36 +166,12 @@ test('今の利用者の記録だけを消せる', () => {
   assert.equal(storage.listProfiles().length, 1);
 });
 
-test('成績の共有は、何も設定していなければ「送らない」', () => {
-  const storage = createStorage(createFakeBackend());
-  assert.equal(storage.getShareLevel(), 'none');
-});
-
-test('共有の設定は利用者ごとに分かれる', () => {
-  const storage = createStorage(createFakeBackend());
-  const first = storage.getCurrentProfile();
-  storage.setShareLevel('full');
-
-  const second = storage.addProfile('2人目');
-  assert.equal(storage.getShareLevel(), 'none', '新しい人は送らないから始まる');
-
-  storage.switchProfile(first.id);
-  assert.equal(storage.getShareLevel(), 'full');
-  assert.equal(storage.getShareLevelOf(second.id), 'none');
-});
-
-test('知らない値を渡されたら「送らない」に倒す', () => {
-  const storage = createStorage(createFakeBackend());
-  assert.equal(storage.setShareLevel('everything'), 'none');
-  assert.equal(storage.getShareLevel(), 'none');
-});
-
-test('利用者を消すと、共有の設定も一緒に消える', () => {
+test('利用者を消すと、その人の記録も一緒に消える', () => {
   const storage = createStorage(createFakeBackend());
   const extra = storage.addProfile('消される人');
-  storage.setShareLevel('summary');
-  assert.equal(storage.getShareLevelOf(extra.id), 'summary');
+  storage.recordAnswer('q1', true, '2026-09-13');
+  assert.equal(storage.getHistoryOf(extra.id).q1.lastResult, 'correct');
 
   storage.deleteProfile(extra.id);
-  assert.equal(storage.getShareLevelOf(extra.id), 'none');
+  assert.deepEqual(storage.getHistoryOf(extra.id), {});
 });

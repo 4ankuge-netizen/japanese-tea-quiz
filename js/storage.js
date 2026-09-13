@@ -1,36 +1,27 @@
 // スマホの中(ローカルストレージ)に、学習の記録を保存したり読み出したりするための部品です。
 // テストのときはローカルストレージの代わりに「ふりの保存先(メモリ上のオブジェクト)」を渡せるようにしてあります。
 //
-// 【利用者(プロフィール)について】
-// 1台の端末を複数の実習生が使うことを想定しているため、記録は「利用者ごと」に分けて保存します。
-// 保存するときの名前(キー)の後ろに利用者の番号を付けることで、混ざらないようにしています。
-//   例) pharmacyQuiz.history:p_abc123  … p_abc123 さんの学習履歴
-// 利用者の一覧と「今は誰が使っているか」だけは、利用者に関係なく1つだけ持ちます。
+// 【利用者について】
+// このアプリを使うのは1人だけなので、利用者を切り替える画面は設けていません。
+// ただし記録を「利用者ごと」に分けて保存する仕組み自体は、そのまま残してあります。
+//
+// なぜ残すか:
+//   ここを書き替えると、すでに端末に保存されている学習記録の置き場所が変わり、
+//   記録が消えたように見える事故が起きます。使わなくても害はないので触りません。
+//
+// 保存するときの名前(キー)の後ろに利用者の番号を付けて、混ざらないようにしています。
+//   例) teaQuiz.history:p_abc123  … p_abc123 さんの学習履歴
 
-const PROFILES_KEY = 'pharmacyQuiz.profiles';
-const CURRENT_PROFILE_KEY = 'pharmacyQuiz.currentProfile';
+const PROFILES_KEY = 'teaQuiz.profiles';
+const CURRENT_PROFILE_KEY = 'teaQuiz.currentProfile';
 
 // 利用者ごとに分けて保存するデータの、名前の先頭部分
-const HISTORY_KEY = 'pharmacyQuiz.history';
-const BOOKMARK_KEY = 'pharmacyQuiz.bookmarks';
-const STREAK_KEY = 'pharmacyQuiz.streak';
-// 成績を先生に送るかどうかの設定
-const SHARE_KEY = 'pharmacyQuiz.share';
-// 前回どこまで送ったか(report-sync.js が使う名前と揃えてある)
-const LAST_SENT_KEY = 'pharmacyQuiz.lastSent';
-
-/*
-  成績を先生に送るかどうかの3段階。
-  見られたくないものは人によって違うので、「全部か無いか」ではなく途中を用意している。
-    none    … 何も送らない(初期値)
-    summary … 分野ごとの正答率だけ送る(間違えた問題は端末から出さない)
-    full    … 間違えた問題も含めて送る
-*/
-export const SHARE_LEVELS = ['none', 'summary', 'full'];
-export const DEFAULT_SHARE_LEVEL = 'none';
+const HISTORY_KEY = 'teaQuiz.history';
+const BOOKMARK_KEY = 'teaQuiz.bookmarks';
+const STREAK_KEY = 'teaQuiz.streak';
 
 // 利用者を1人も作っていない端末で、最初に用意される人の名前
-const DEFAULT_PROFILE_NAME = '利用者1';
+const DEFAULT_PROFILE_NAME = 'わたし';
 
 // 利用者を見分けるための番号を作る。
 // 時刻と乱数を組み合わせているので、同じ番号が二度できることはまずない
@@ -150,7 +141,7 @@ export function createStorage(backend) {
 
     /*
       利用者を、その人の記録ごと削除する。
-      実習生が入れ替わったときに、前の人の記録を残さないための機能。
+      使わない機能だが、仕組みとして残してある。
       利用者が1人しかいないときは削除できない(誰もいない状態になってしまうため)
     */
     deleteProfile(profileId) {
@@ -158,7 +149,7 @@ export function createStorage(backend) {
       if (profiles.length <= 1) return false;
       if (!profiles.some((p) => p.id === profileId)) return false;
 
-      for (const baseKey of [HISTORY_KEY, BOOKMARK_KEY, STREAK_KEY, SHARE_KEY, LAST_SENT_KEY]) {
+      for (const baseKey of [HISTORY_KEY, BOOKMARK_KEY, STREAK_KEY]) {
         removeKey(keyFor(baseKey, profileId));
       }
       const remaining = profiles.filter((p) => p.id !== profileId);
@@ -251,29 +242,6 @@ export function createStorage(backend) {
       return readJSON(keyFor(HISTORY_KEY, profileId), {});
     },
 
-    // 今の利用者が「成績を先生に送る」をどう設定しているか。
-    // 何も設定していない人は「送らない」として扱う
-    getShareLevel() {
-      return this.getShareLevelOf(currentProfileId());
-    },
-
-    getShareLevelOf(profileId) {
-      const value = backend.getItem(keyFor(SHARE_KEY, profileId));
-      return SHARE_LEVELS.includes(value) ? value : DEFAULT_SHARE_LEVEL;
-    },
-
-    // 設定を変える。知らない値が来たら「送らない」に倒す(安全な側に寄せる)
-    setShareLevel(level) {
-      const safe = SHARE_LEVELS.includes(level) ? level : DEFAULT_SHARE_LEVEL;
-      backend.setItem(keyFor(SHARE_KEY, currentProfileId()), safe);
-      return safe;
-    },
-
-    // 「前回どこまで送ったか」の記録を消す。
-    // 送る設定を変えたときに呼ぶと、次回あらためて送り直される
-    clearLastSent(profileId = currentProfileId()) {
-      removeKey(keyFor(LAST_SENT_KEY, profileId));
-    },
   };
 }
 

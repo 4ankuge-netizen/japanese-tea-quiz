@@ -479,7 +479,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
   - `js/storage.js` … 保存キー接頭辞が `teaQuiz.`、`SHARE_LEVELS` / `DEFAULT_SHARE_LEVEL` / 共有レベルの読み書きを廃止
   - `startQuiz({ categoryId })` … 分野を選んだ直後に出題を始める（難易度画面を経由しない）
 
-- [ ] **Step 1: index.html から不要な画面を消す**
+- [x] **Step 1: index.html から不要な画面を消す**
 
 次の4つの `<section>` を丸ごと削除する。
 
@@ -491,7 +491,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ヘッダーの `<button id="profile-chip">` も削除する（`streak-display` は残す）。
 結果画面の `<button id="other-difficulty-button">別の難易度を選ぶ</button>` も削除する。
 
-- [ ] **Step 2: index.html のタイトルと文言を変える**
+- [x] **Step 2: index.html のタイトルと文言を変える**
 
 - `<title>薬学実習クイズ</title>` → `<title>日本茶インストラクター試験クイズ</title>`
 - `<h1>薬学実習クイズ</h1>` → `<h1>日本茶インストラクター試験</h1>`
@@ -499,7 +499,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - `<button id="weak-point-button">弱点復習モードで始める</button>` → `<button id="weak-point-button">間違えた問題だけ復習する</button>`
 - 正答率画面の `<h2>カテゴリー別 正答率</h2>` → `<h2>分野別 正答率</h2>`
 
-- [ ] **Step 3: js/app.js から不要なコードを消す**
+- [x] **Step 3: js/app.js から不要なコードを消す**
 
 削除する import:
 
@@ -533,7 +533,7 @@ import {
 
 `init()` と `setupNav()` の中にある、上で消した関数への呼び出し・イベント登録もすべて削除する。
 
-- [ ] **Step 4: renderQuestion から疑義照会の分岐を消す**
+- [x] **Step 4: renderQuestion から疑義照会の分岐を消す**
 
 `js/app.js` の `renderQuestion()` 内、次の部分を削除する。
 
@@ -547,7 +547,7 @@ import {
   document.getElementById('question-text').classList.remove('is-query');
 ```
 
-- [ ] **Step 5: 分野を選んだらすぐ出題するようにする**
+- [x] **Step 5: 分野を選んだらすぐ出題するようにする**
 
 `renderHome()` 内の
 
@@ -583,7 +583,7 @@ function startQuiz({ categoryId } = {}) {
 
 `beginSession` から `fromCategory` 引数と `sessionUsedCategory` の代入を削除する。
 
-- [ ] **Step 6: showScreen から消した画面の分岐を消す**
+- [x] **Step 6: showScreen から消した画面の分岐を消す**
 
 `showScreen()` 内、次の行を削除する。
 
@@ -600,7 +600,7 @@ function startQuiz({ categoryId } = {}) {
   if (screenId === 'report-screen') renderReportScreen();
 ```
 
-- [ ] **Step 7: loadData を書き替える**
+- [x] **Step 7: loadData を書き替える**
 
 ```javascript
 async function loadData() {
@@ -621,7 +621,7 @@ async function loadData() {
 }
 ```
 
-- [ ] **Step 8: quiz-engine.js から難易度を消す**
+- [x] **Step 8: quiz-engine.js から難易度を消す**
 
 `filterQuestions` を次のとおり書き替える。
 
@@ -637,7 +637,7 @@ export function filterQuestions(questions, { categoryId } = {}) {
 }
 ```
 
-- [ ] **Step 9: storage.js の保存キーと共有機能を直す**
+- [x] **Step 9: storage.js の保存キーと共有機能を直す**
 
 - `PROFILES_KEY` `CURRENT_PROFILE_KEY` `HISTORY_KEY` `BOOKMARK_KEY` `STREAK_KEY` の文字列を `pharmacyQuiz.` から `teaQuiz.` に変える
 - `SHARE_KEY` と `LAST_SENT_KEY` の定数を削除する
@@ -654,7 +654,7 @@ export function filterQuestions(questions, { categoryId } = {}) {
 // 記録が消えたように見える事故が起きるため、あえて触らない。
 ```
 
-- [ ] **Step 10: 消した機能のテストを外す**
+- [x] **Step 10: 消した機能のテストを外す**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -663,7 +663,7 @@ grep -n "share\|Share\|difficulty\|pharmacyQuiz" tests/storage.test.js tests/qui
 
 ヒットしたテストを削除するか、`teaQuiz.` / 難易度なしの形に直す。
 
-- [ ] **Step 11: テストを実行して全部通ることを確認する**
+- [x] **Step 11: テストを実行して全部通ることを確認する**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -672,7 +672,7 @@ node --test
 
 期待: PASS。
 
-- [ ] **Step 12: 残骸が無いか確認する**
+- [x] **Step 12: 残骸が無いか確認する**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -681,7 +681,7 @@ grep -rn "report\|difficulty\|profile-screen\|share\|pharmacyQuiz\|疑義照会\
 
 期待: 何もヒットしない（`storage.js` の profile 関連のコメントと関数名だけは残ってよい）。
 
-- [ ] **Step 13: コミット**
+- [x] **Step 13: コミット**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"

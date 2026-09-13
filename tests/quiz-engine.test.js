@@ -10,24 +10,24 @@ import {
 } from '../js/quiz-engine.js';
 
 const sampleQuestions = [
-  { id: 'a', category: 'cancer', difficulty: 'beginner', correctIndex: 0 },
-  { id: 'b', category: 'cancer', difficulty: 'advanced', correctIndex: 1 },
-  { id: 'c', category: 'diabetes', difficulty: 'beginner', correctIndex: 2 },
+  { id: 'a', category: 'history', correctIndex: 0 },
+  { id: 'b', category: 'history', correctIndex: 1 },
+  { id: 'c', category: 'chemistry', correctIndex: 2 },
 ];
 
-test('カテゴリーで絞り込める', () => {
-  const result = filterQuestions(sampleQuestions, { categoryId: 'cancer' });
+test('分野で絞り込める', () => {
+  const result = filterQuestions(sampleQuestions, { categoryId: 'history' });
   assert.deepEqual(result.map((q) => q.id), ['a', 'b']);
 });
 
-test('難易度で絞り込める', () => {
-  const result = filterQuestions(sampleQuestions, { difficulty: 'beginner' });
-  assert.deepEqual(result.map((q) => q.id), ['a', 'c']);
+test('分野を指定しなければ全部返る(模試モードで使う)', () => {
+  const result = filterQuestions(sampleQuestions, {});
+  assert.deepEqual(result.map((q) => q.id), ['a', 'b', 'c']);
 });
 
-test('カテゴリーと難易度を両方指定して絞り込める', () => {
-  const result = filterQuestions(sampleQuestions, { categoryId: 'cancer', difficulty: 'advanced' });
-  assert.deepEqual(result.map((q) => q.id), ['b']);
+test('引数を何も渡さなくても全部返る', () => {
+  const result = filterQuestions(sampleQuestions);
+  assert.deepEqual(result.map((q) => q.id), ['a', 'b', 'c']);
 });
 
 test('間違えた問題だけを取り出せる', () => {

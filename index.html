@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>薬学実習クイズ</title>
+  <title>日本茶インストラクター試験クイズ</title>
   <!-- 見出し用の明朝体と、本文用のゴシック体をGoogleフォントから読み込む -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,10 +16,8 @@
 </head>
 <body>
   <header class="app-header">
-    <h1>薬学実習クイズ</h1>
+    <h1>日本茶インストラクター試験</h1>
     <div class="header-meta">
-      <!-- 今この端末を使っている人。押すと利用者の切り替え画面へ進む -->
-      <button id="profile-chip" class="profile-chip" aria-label="利用者を切り替える"></button>
       <p id="streak-display" class="streak-display"></p>
     </div>
   </header>
@@ -33,16 +31,9 @@
 
   <main>
     <section id="home-screen" class="screen">
-      <h2>カテゴリーを選んでください</h2>
+      <h2>分野を選んでください</h2>
       <div id="category-list"></div>
-      <button id="weak-point-button">弱点復習モードで始める</button>
-    </section>
-
-    <!-- カテゴリーを選んだあとに出る、初級・中級・上級を選ぶ画面 -->
-    <section id="difficulty-screen" class="screen" hidden>
-      <button id="difficulty-back-button" class="back-button">カテゴリー一覧に戻る</button>
-      <h2 id="difficulty-title"></h2>
-      <div id="difficulty-list"></div>
+      <button id="weak-point-button">間違えた問題だけ復習する</button>
     </section>
 
     <section id="quiz-screen" class="screen" hidden>
@@ -94,91 +85,18 @@
 
       <div class="result-actions">
         <button id="retry-button">もう一度解く</button>
-        <button id="other-difficulty-button">別の難易度を選ぶ</button>
         <button id="back-home-button">ホームに戻る</button>
       </div>
     </section>
 
     <section id="stats-screen" class="screen" hidden>
-      <h2>カテゴリー別 正答率</h2>
+      <h2>分野別 正答率</h2>
       <div id="stats-list"></div>
     </section>
 
     <section id="bookmark-screen" class="screen" hidden>
       <h2>ブックマークした問題</h2>
       <div id="bookmark-list"></div>
-    </section>
-
-    <!-- 利用者の切り替え画面。1台の端末を複数の実習生で使うためのもの -->
-    <section id="profile-screen" class="screen" hidden>
-      <button id="profile-back-button" class="back-button">ホームに戻る</button>
-      <h2>利用者</h2>
-      <p class="screen-note">この端末では、利用者ごとに成績・ブックマーク・連続学習日数を別々に記録します。名前を押すとその人に切り替わります。</p>
-      <div id="profile-list"></div>
-      <button id="add-profile-button" class="secondary-button">＋ 利用者を追加</button>
-
-      <div id="send-report-section" hidden>
-        <h3 class="section-title" style="margin-top:28px">先生への報告</h3>
-        <p class="screen-note">
-          成績を先生と共有するかどうかを選べます。いつでも変えられます。
-          共有する場合は、10問解き終わるたびに自動で届きます。
-        </p>
-        <div id="share-level-list" class="share-list"></div>
-        <p id="send-report-status" class="report-status"></p>
-      </div>
-
-      <h3 class="section-title" style="margin-top:28px">成績の書き出し</h3>
-      <p class="screen-note">今の利用者の成績を文字にまとめます。コピーしてメールやメッセージに貼り付けられます。</p>
-      <button id="export-button" class="secondary-button">成績を書き出す</button>
-      <pre id="export-output" class="export-output" hidden></pre>
-      <button id="copy-export-button" class="secondary-button" hidden>コピーする</button>
-      <p id="export-message" class="export-message"></p>
-
-    </section>
-
-    <!-- 利用者を作った直後に、成績を共有するかどうかを1回だけ聞く画面 -->
-    <section id="share-ask-screen" class="screen" hidden>
-      <h2>成績を先生と共有しますか？</h2>
-      <p class="screen-note">
-        <b id="share-ask-name"></b> さんの設定です。
-        あとから「利用者」の画面でいつでも変えられます。迷ったら「共有しない」で構いません。
-      </p>
-      <div id="share-ask-list" class="share-list"></div>
-    </section>
-
-    <!-- 先生用。集めた成績を貼り付けて、全員分をまとめて見る画面 -->
-    <section id="report-screen" class="screen" hidden>
-      <button id="report-back-button" class="back-button">ホームに戻る</button>
-      <h2>みんなの成績</h2>
-      <p class="screen-note">
-        この画面は先生用です。URLの末尾に <code>#teacher</code> を付けて開いたときだけ表示されます。
-        合言葉を入れて「読み込む」を押すと、実習生から届いた成績をまとめて表示します。
-        合言葉はこの端末に覚えられるので、次回からは入力不要です。
-        <b>表示されるのは、共有する設定にしている実習生だけです。</b>
-        載っていない人は、共有しない設定にしているか、まだ解いていないかのどちらかです。
-      </p>
-      <div class="report-key-row">
-        <input id="report-key" class="report-key" type="password" placeholder="合言葉"
-          autocomplete="off" spellcheck="false">
-        <button id="report-load-button" class="primary-button">読み込む</button>
-      </div>
-      <p id="report-message" class="export-message"></p>
-      <div id="report-output"></div>
-
-      <!-- 通信がうまくいかないときのための逃げ道。
-           スプレッドシートの「名前」と「成績データ」の列を直接貼り付けても読める -->
-      <details class="report-fallback">
-        <summary>うまく読み込めないとき（貼り付けて読む）</summary>
-        <p class="screen-note">
-          スプレッドシートの「名前」と「成績データ」の列をまとめて選んでコピーし、下に貼り付けてください。
-        </p>
-        <textarea id="report-input" class="report-input" rows="5"
-          placeholder="ここに貼り付けてください（1行に1人）"></textarea>
-        <div class="report-actions">
-          <button id="report-paste-button" class="secondary-button">貼り付けた内容を読む</button>
-          <button id="report-clear-button" class="secondary-button">消す</button>
-        </div>
-      </details>
     </section>
   </main>
 

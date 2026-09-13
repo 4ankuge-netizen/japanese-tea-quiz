@@ -10,66 +10,23 @@ import {
 } from './quiz-engine.js';
 import { createStorage } from './storage.js';
 import { computeCategoryAccuracy, summarizeAccuracy } from './stats.js';
-import { encodeReport, encodeSummaryReport, decodeAnyReport, parsePastedReports } from './report-code.js';
-import {
-  needsSending,
-  deleteReport,
-  lastSentKey,
-  sendReport,
-  fetchReports,
-  TEACHER_KEY_STORAGE,
-} from './report-sync.js';
 
 const storage = createStorage(window.localStorage);
 
 // 1回の出題で出す問題数。問題プールが増えても、1回分はこの数で区切る
 const QUESTIONS_PER_SESSION = 10;
 
-/*
-  成績を先生に送るかどうかの3段階。
-  「全部か無いか」だと、間違えた問題だけ見られたくない人の逃げ場がなくなるため、
-  途中(正答率だけ)を用意している。初期値はいちばん送らない none。
-*/
-const SHARE_OPTIONS = [
-  {
-    id: 'none',
-    name: '共有しない',
-    description: '先生の画面には何も表示されません',
-  },
-  {
-    id: 'summary',
-    name: '正答率だけ共有する',
-    description: '分野ごとの正答率と回答数のみ。間違えた問題は端末から出ません',
-  },
-  {
-    id: 'full',
-    name: 'すべて共有する',
-    description: '間違えた問題も共有します。つまずいた所を一緒に見てもらえます',
-  },
-];
-
-// 難易度の一覧。表示する名前と、どんな問題かの一言説明をここにまとめておく。
-// 順番もこの配列のとおりに画面へ並ぶ
-const DIFFICULTIES = [
-  { id: 'beginner', name: '初級', description: 'まず押さえておきたい基本' },
-  { id: 'intermediate', name: '中級', description: '実務で判断が必要になる内容' },
-  { id: 'advanced', name: '上級', description: '専門的・応用的な内容' },
-];
-
-// 出題に使う問題(PMDAの一次資料で確認済みのものだけ)
+// 出題に使うすべての問題。
+// 裏付けが取れていない問題(verified: false)も含める。
+// 隠さずに出して「テキストで要確認」の印を付ける方針のため
 let allQuestions = [];
-// 確認前のものも含めた全問題。「確認待ちが何問あるか」を案内するために持っておく
-let allQuestionsIncludingUnverified = [];
 let categories = [];
-// 成績の送り先の設定。data/report-endpoint.json から読み込む。
-// enabled が false のあいだは、自動送信も先生用の読み込みも行わない
-let reportEndpoint = { enabled: false };
 let currentSession = []; // 今出題中の問題の配列
 let currentIndex = 0;
 // 出題できる問題が0件だったときに表示する案内文。
 // 「まだクイズを始めていない」のか「弱点がない」のかで文言を変えたいので、
 // 出題を始めるたびにその状況に合った文をここに入れておく
-let emptySessionMessage = 'ホームからカテゴリーを選んでください。';
+let emptySessionMessage = 'ホームから分野を選んでください。';
 // 今回の出題での正解数(結果画面で使う)
 let sessionCorrectCount = 0;
 // 今回の出題ですでに答えた問題の記録。
@@ -78,13 +35,8 @@ let sessionCorrectCount = 0;
 let answeredInSession = new Map();
 // 「もう一度解く」で同じ出題内容をやり直せるよう、直前の出題方法を覚えておく
 let lastQuizStarter = null;
-// 難易度選択画面で、今どのカテゴリーを開いているか
-let selectedCategory = null;
-// 結果画面の見出しに出す「がん ・ 初級」のような文字列
+// 結果画面の見出しに出す分野名(「茶の化学」など)
 let sessionLabel = '';
-// 今回の出題がカテゴリー選択から始まったか(弱点復習モードなら false)。
-// 結果画面の「別の難易度を選ぶ」ボタンを出すかどうかの判断に使う
-let sessionUsedCategory = false;
 // 今表示している選択肢の並びと、その中で正解が何番目か。
 // 表示のたびに並び替えるため、正解の位置は問題データではなくこちらを見る
 let currentChoices = null;
@@ -98,26 +50,22 @@ function getTodayLocalDate() {
   return `${year}-${month}-${day}`;
 }
 
-// 起動時に、問題データとカテゴリー一覧を読み込む
+// 起動時に、問題データと分野一覧を読み込む
 async function loadData() {
   const [questionsRes, categoriesRes] = await Promise.all([
     fetch('data/questions.json'),
     fetch('data/categories.json'),
   ]);
-  allQuestionsIncludingUnverified = await questionsRes.json();
-  // PMDAの添付文書・インタビューフォーム・ガイドラインで内容を確認できた問題だけを出題する。
-  // 未確認の問題は、確認作業が済むまでアプリには出さない
-  allQuestions = allQuestionsIncludingUnverified.filter((q) => q.verified);
-  categories = await categoriesRes.json();
+  /*
+    裏付けが取れていない問題(verified: false)も出題する。
 
-  // 送り先の設定は「あれば使う」扱い。読めなくてもアプリ本体は動かしたいので、
-  // 失敗しても止めずに「送れない状態」として続ける
-  try {
-    const res = await fetch('data/report-endpoint.json');
-    if (res.ok) reportEndpoint = await res.json();
-  } catch {
-    reportEndpoint = { enabled: false };
-  }
+    コピー元の薬のアプリでは未確認の問題を隠していたが、この試験対策では方針が逆。
+    協会のテキストを取り込めない以上、公開資料だけでは埋まらない範囲が必ず残る。
+    隠してしまうと試験範囲に穴ができるので、出題したうえで
+    「テキストで要確認」の印を付け、手元のテキストで照らし合わせられるようにする。
+  */
+  allQuestions = await questionsRes.json();
+  categories = await categoriesRes.json();
 }
 
 // 画面切り替え:指定したscreenだけ表示し、他は隠す
@@ -126,31 +74,21 @@ function showScreen(screenId) {
     el.hidden = el.id !== screenId;
   });
   // 今いる画面のタブに印を付けて、現在地が分かるようにする。
-  // 難易度を選ぶ画面はカテゴリー選びの続きなので「ホーム」、
   // 結果画面はクイズの流れの一部なので「クイズ」を選択中として扱う
   let tabToHighlight = screenId;
   if (screenId === 'result-screen') tabToHighlight = 'quiz-screen';
-  if (screenId === 'difficulty-screen') tabToHighlight = 'home-screen';
-  // 利用者の切り替え画面はヘッダーから開くので、どのタブも選択中にしない。
-  // 先生用の成績まとめ画面もその続きなので同じ扱いにする
-  if (screenId === 'profile-screen' || screenId === 'report-screen' || screenId === 'share-ask-screen') {
-    tabToHighlight = null;
-  }
   document.querySelectorAll('.app-nav button').forEach((button) => {
     const isCurrent = button.dataset.screen === tabToHighlight;
     button.classList.toggle('active', isCurrent);
     button.setAttribute('aria-current', isCurrent ? 'page' : 'false');
   });
-  if (screenId === 'difficulty-screen') renderDifficultyScreen();
-  if (screenId === 'profile-screen') renderProfileScreen();
-  if (screenId === 'report-screen') renderReportScreen();
   if (screenId === 'stats-screen') renderStats();
   if (screenId === 'bookmark-screen') renderBookmarks();
   if (screenId === 'quiz-screen') renderQuestion();
   if (screenId === 'result-screen') renderResult();
 }
 
-// カテゴリーごとの色を、その部品に持たせる。
+// 分野ごとの色を、その部品に持たせる。
 // CSS側で --cat-cancer のような名前の色をあらかじめ用意してあるので、
 // ここでは「この部品の --cat は、がんの色を使う」と指定するだけでよい。
 // これでホーム・正答率・ブックマークの3画面が同じ色で揃う
@@ -169,75 +107,16 @@ function renderHome() {
     const nameEl = document.createElement('span');
     nameEl.textContent = category.name;
 
-    // そのカテゴリーに何問入っているかを添えて、選ぶときの目安にしてもらう
+    // その分野に何問入っているかを添えて、選ぶときの目安にしてもらう
     const count = filterQuestions(allQuestions, { categoryId: category.id }).length;
     const countEl = document.createElement('span');
     countEl.className = 'category-count';
     countEl.textContent = `全${count}問`;
 
     button.append(nameEl, countEl);
-    // カテゴリーを選んだら、すぐ出題せずに難易度を選ぶ画面へ進む
-    button.addEventListener('click', () => openDifficultyScreen(category));
-    list.appendChild(button);
-  });
-}
-
-// 難易度を選ぶ画面を開く
-function openDifficultyScreen(category) {
-  selectedCategory = category;
-  showScreen('difficulty-screen');
-}
-
-// 難易度を選ぶ画面の中身を作る。
-// 初級・中級・上級それぞれについて「何問あるか」「これまでの正答率」を添える
-function renderDifficultyScreen() {
-  if (!selectedCategory) return;
-
-  document.getElementById('difficulty-title').textContent = `${selectedCategory.name} － 難易度を選んでください`;
-
-  const list = document.getElementById('difficulty-list');
-  list.innerHTML = '';
-  const history = storage.getHistory();
-
-  DIFFICULTIES.forEach((difficulty) => {
-    const pool = filterQuestions(allQuestions, {
-      categoryId: selectedCategory.id,
-      difficulty: difficulty.id,
-    });
-    const summary = summarizeAccuracy(pool, history);
-
-    const button = document.createElement('button');
-    button.className = 'difficulty-item';
-    button.dataset.difficulty = difficulty.id; // 難易度ごとに色を変えるための目印(CSS側で使う)
-
-    const nameEl = document.createElement('span');
-    nameEl.className = 'difficulty-name';
-    nameEl.textContent = difficulty.name;
-
-    const descEl = document.createElement('span');
-    descEl.className = 'difficulty-desc';
-    descEl.textContent = difficulty.description;
-
-    // 問題数と、これまでの正答率(まだ解いていなければ「未回答」)
-    const metaEl = document.createElement('span');
-    metaEl.className = 'difficulty-meta';
-    metaEl.textContent =
-      summary.answered === 0
-        ? `全${summary.totalQuestions}問 ・ 未回答`
-        : `全${summary.totalQuestions}問 ・ 正答率 ${summary.accuracyPercent}%`;
-
-    button.append(nameEl, descEl, metaEl);
-
-    // 問題が1問も入っていない難易度は、押しても出題できないので押せなくする
-    if (pool.length === 0) {
-      button.disabled = true;
-      metaEl.textContent = '準備中';
-    } else {
-      button.addEventListener('click', () =>
-        startQuiz({ categoryId: selectedCategory.id, difficulty: difficulty.id })
-      );
-    }
-
+    // 分野を選んだら、そのまま10問の出題を始める。
+    // 本番の試験に難易度の区分はないため、難易度を選ぶ画面は設けていない
+    button.addEventListener('click', () => startQuiz({ categoryId: category.id }));
     list.appendChild(button);
   });
 }
@@ -252,32 +131,20 @@ function beginSession({ pool, emptyMessage, starter, label, fromCategory = false
   emptySessionMessage = emptyMessage;
   lastQuizStarter = starter;
   sessionLabel = label;
-  sessionUsedCategory = fromCategory;
   showScreen('quiz-screen');
 }
 
-function startQuiz({ categoryId, difficulty } = {}) {
-  const pool = filterQuestions(allQuestions, { categoryId, difficulty });
-  // 問題自体は入っているのに、確認作業がまだ済んでいないだけ、という場合は
-  // その理由が分かる案内にする
-  const unverifiedCount = filterQuestions(allQuestionsIncludingUnverified, { categoryId, difficulty })
-    .filter((q) => !q.verified).length;
-  const message =
-    unverifiedCount > 0
-      ? `ここには確認待ちの問題が${unverifiedCount}問あります。PMDAの資料での確認が済んだものから出題されます。`
-      : 'ここにはまだ問題がありません。';
+function startQuiz({ categoryId } = {}) {
+  const pool = filterQuestions(allQuestions, { categoryId });
 
-  // 結果画面に出す見出し(「がん ・ 初級」など)を作っておく
+  // 結果画面に出す見出し(「茶の化学」など)を作っておく
   const categoryName = categories.find((c) => c.id === categoryId)?.name ?? '';
-  const difficultyName = DIFFICULTIES.find((d) => d.id === difficulty)?.name ?? '';
-  const label = [categoryName, difficultyName].filter(Boolean).join(' ・ ');
 
   beginSession({
     pool,
-    emptyMessage: message,
-    starter: () => startQuiz({ categoryId, difficulty }),
-    label,
-    fromCategory: Boolean(categoryId),
+    emptyMessage: 'この分野にはまだ問題がありません。',
+    starter: () => startQuiz({ categoryId }),
+    label: categoryName,
   });
 }
 
@@ -285,9 +152,9 @@ function startWeakPointQuiz() {
   const wrongIds = storage.getWrongQuestionIds();
   beginSession({
     pool: getWeakPointQuestions(allQuestions, wrongIds),
-    emptyMessage: '間違えた問題はまだありません。まずはカテゴリーを選んで解いてみましょう。',
+    emptyMessage: '間違えた問題はまだありません。まずは分野を選んで解いてみましょう。',
     starter: startWeakPointQuiz,
-    label: '弱点復習モード',
+    label: '間違えた問題だけ復習',
   });
 }
 
@@ -320,14 +187,6 @@ function renderQuestion() {
   const bookmarkButton = document.getElementById('bookmark-toggle-button');
   bookmarkButton.textContent = bookmarkIds.includes(question.id) ? '★ ブックマーク解除' : '☆ ブックマーク';
 
-  // 疑義照会の問題は「必要か不要か」を先に選ぶ2段階の形式なので、別の作り方をする
-  if (question.type === 'query') {
-    document.getElementById('question-text').classList.add('is-query');
-    renderQueryStep1(question);
-    return;
-  }
-  document.getElementById('question-text').classList.remove('is-query');
-
   // 選択肢は表示するたびに並び替える。
   // 位置を覚えて答えてしまうのを防ぐため、同じ問題でも毎回並びが変わる
   currentChoices = shuffleChoices(question);
@@ -340,88 +199,6 @@ function renderQuestion() {
     button.addEventListener('click', () => onAnswer(question, index, button));
     choiceList.appendChild(button);
   });
-}
-
-/*
-  疑義照会の問題の1段階目。
-  「疑義照会は不要」「疑義照会が必要」の2つだけを出す。
-
-  なぜ2段階に分けるか:
-    処方監査でまず問われるのは「そもそも照会が要るのか」という判断です。
-    理由の選択肢を最初から並べてしまうと、選択肢を見た時点で
-    「何か問題があるらしい」と分かってしまい、その練習になりません。
-*/
-function renderQueryStep1(question) {
-  const choiceList = document.getElementById('choice-list');
-  choiceList.innerHTML = '';
-
-  [
-    { label: '疑義照会は不要', chose: false },
-    { label: '疑義照会が必要', chose: true },
-  ].forEach(({ label, chose }) => {
-    const button = document.createElement('button');
-    button.textContent = label;
-    button.addEventListener('click', () => onQueryStep1(question, chose));
-    choiceList.appendChild(button);
-  });
-}
-
-// 1段階目に答えたときの処理
-function onQueryStep1(question, choseNeedsQuery) {
-  const buttons = [...document.querySelectorAll('#choice-list button')];
-  const correctButton = question.needsQuery ? buttons[1] : buttons[0];
-  const chosenButton = choseNeedsQuery ? buttons[1] : buttons[0];
-
-  // 判断が合っていたかどうかで色を付ける
-  correctButton.classList.add('correct');
-  if (choseNeedsQuery !== question.needsQuery) chosenButton.classList.add('incorrect');
-  buttons.forEach((b) => (b.disabled = true));
-
-  // 「必要」が正解で、実際に「必要」を選べたときだけ、理由を選ぶ2段階目へ進む。
-  // それ以外は、この時点で答え合わせを表示する
-  if (question.needsQuery && choseNeedsQuery) {
-    renderQueryStep2(question);
-    return;
-  }
-  finishAnswer(question, choseNeedsQuery === question.needsQuery);
-}
-
-// 疑義照会の問題の2段階目。照会が必要な理由を5つの中から選ぶ
-function renderQueryStep2(question) {
-  const choiceList = document.getElementById('choice-list');
-
-  // 1段階目の答えを残したまま、その下に理由を出す
-  const heading = document.createElement('p');
-  heading.className = 'query-step2-heading';
-  heading.textContent = '照会が必要な理由として最も適切なのはどれか。';
-  choiceList.appendChild(heading);
-
-  // 理由の選択肢は専用の入れ物にまとめて入れる。
-  // こうしておくと、1段階目のA・Bとは別に、Aから番号を振り直せる
-  const reasonList = document.createElement('div');
-  reasonList.className = 'query-reasons';
-
-  currentChoices = shuffleChoices(question);
-  currentChoices.choices.forEach((choiceText, index) => {
-    const button = document.createElement('button');
-    button.className = 'query-reason';
-    button.textContent = choiceText;
-    button.addEventListener('click', () => onQueryStep2(question, index, button));
-    reasonList.appendChild(button);
-  });
-  choiceList.appendChild(reasonList);
-}
-
-// 2段階目(理由)に答えたときの処理
-function onQueryStep2(question, selectedIndex, selectedButton) {
-  const isCorrect = checkAnswer(currentChoices, selectedIndex);
-  const buttons = [...document.querySelectorAll('#choice-list button.query-reason')];
-
-  buttons[currentChoices.correctIndex].classList.add('correct');
-  if (!isCorrect) selectedButton.classList.add('incorrect');
-  buttons.forEach((b) => (b.disabled = true));
-
-  finishAnswer(question, isCorrect);
 }
 
 function onAnswer(question, selectedIndex, selectedButton) {
@@ -440,9 +217,8 @@ function onAnswer(question, selectedIndex, selectedButton) {
 /*
   答え合わせの共通処理。
   成績の記録と、解説パネルの表示を行う。
-  ふつうの問題と疑義照会の問題では選択肢の出し方が違うため、
   「どのボタンに色を付けるか」は呼び出す側で済ませておき、
-  ここでは形式によらず同じ処理だけを行う
+  ここでは共通の処理だけを行う
 */
 function finishAnswer(question, isCorrect) {
   // 同じ問題を1回の出題の中で二度答えた場合、成績を二重に数えない。
@@ -510,10 +286,6 @@ function renderResult() {
   const total = currentSession.length;
   const correct = sessionCorrectCount;
 
-  // 解き終わったこの区切りで、成績を先生へ送る。
-  // 待たずに先へ進むので、結果画面の表示が遅くなることはない
-  syncReport();
-
   // 正答率の円グラフ。--pct に 0〜100 を入れると、その割合だけ緑に塗られる
   const percent = total === 0 ? 0 : Math.round((correct / total) * 100);
   document.getElementById('score-ring').style.setProperty('--pct', percent);
@@ -531,7 +303,7 @@ function renderResult() {
   document.getElementById('result-correct-count').textContent = `${correct}`;
   document.getElementById('result-wrong-count').textContent = `${wrongCount}`;
 
-  // どのカテゴリー・難易度を解いたのかを、カードの上に小さく出す
+  // どの分野を解いたのかを、カードの上に小さく出す
   const eyebrowEl = document.getElementById('result-eyebrow');
   eyebrowEl.textContent = sessionLabel;
 
@@ -540,18 +312,14 @@ function renderResult() {
   if (total === 0) {
     commentEl.textContent = '';
   } else if (wrongCount === 0) {
-    commentEl.textContent = '全問正解です。この調子で次の難易度に進みましょう。';
+    commentEl.textContent = '全問正解です。この調子で次の分野に進みましょう。';
   } else if (percent >= 80) {
     commentEl.textContent = `よくできています。間違えた${wrongCount}問を見直せば完璧です。`;
   } else if (percent >= 50) {
-    commentEl.textContent = `半分以上正解できました。間違えた${wrongCount}問は「弱点復習モード」で解き直せます。`;
+    commentEl.textContent = `半分以上正解できました。間違えた${wrongCount}問は「間違えた問題だけ復習する」で解き直せます。`;
   } else {
-    commentEl.textContent = '解説を読み返してから、もう一度解いてみましょう。間違えた問題は「弱点復習モード」にたまっています。';
+    commentEl.textContent = '解説を読み返してから、もう一度解いてみましょう。間違えた問題は「間違えた問題だけ復習する」にたまっています。';
   }
-
-  // 「別の難易度を選ぶ」は、カテゴリーから始めたときだけ意味があるので、
-  // 弱点復習モードで解いたときは隠しておく
-  document.getElementById('other-difficulty-button').hidden = selectedCategory === null || !sessionUsedCategory;
 
   renderResultReview();
 }
@@ -595,15 +363,7 @@ function renderResultReview() {
     answerEl.className = 'review-answer';
     answerEl.append('正解: ');
     const answerText = document.createElement('b');
-    if (question.type === 'query') {
-      // 疑義照会の問題は「必要か不要か」が答え。
-      // 必要な場合は、その理由もあわせて示す
-      answerText.textContent = question.needsQuery
-        ? `疑義照会が必要 ／ ${question.choices[question.correctIndex]}`
-        : '疑義照会は不要';
-    } else {
-      answerText.textContent = question.choices[question.correctIndex];
-    }
+    answerText.textContent = question.choices[question.correctIndex];
     answerEl.append(answerText);
 
     const explanationEl = document.createElement('p');
@@ -636,8 +396,8 @@ function renderStats() {
   const container = document.getElementById('stats-list');
   container.innerHTML = '';
   result.forEach((row) => {
-    // カテゴリー名・棒グラフ・パーセントを横に並べた、帳簿の1行のような見た目にする
-    // まだ1問も解いていないカテゴリーかどうか。
+    // 分野名・棒グラフ・パーセントを横に並べた、帳簿の1行のような見た目にする
+    // まだ1問も解いていない分野かどうか。
     // 「全問間違えて0%」と「未回答」を同じ0%と表示すると誤解を生むので区別する
     const isUnanswered = row.answered === 0;
 
@@ -679,10 +439,10 @@ function renderBookmarks() {
     return;
   }
   bookmarked.forEach((q) => {
-    // 控え(レシート)のように、カテゴリー名のタグ+問題文を1行にする
+    // 控え(レシート)のように、分野名のタグ+問題文を1行にする
     const rowEl = document.createElement('div');
     rowEl.className = 'bookmark-row';
-    applyCategoryColor(rowEl, q.category); // 左端の線とタグの色をカテゴリーに合わせる
+    applyCategoryColor(rowEl, q.category); // 左端の線とタグの色を分野に合わせる
 
     const category = categories.find((c) => c.id === q.category);
     const tagEl = document.createElement('span');
@@ -698,666 +458,6 @@ function renderBookmarks() {
   });
 }
 
-// ---------------------------------------------------------------------------
-// 利用者(プロフィール)まわり。
-// 1台の端末を実習生が交代で使うため、誰の記録なのかを常に見えるようにしている
-// ---------------------------------------------------------------------------
-
-// ヘッダーに「今この端末を使っている人」の名前を出す
-function renderProfileChip() {
-  const profile = storage.getCurrentProfile();
-  document.getElementById('profile-chip').textContent = profile ? profile.name : '利用者';
-}
-
-function renderProfileScreen() {
-  // 送り先が設定されているときだけ「先生への報告」の案内を出す
-  document.getElementById('send-report-section').hidden = !reportEndpoint.enabled;
-  if (reportEndpoint.enabled) {
-    const level = storage.getShareLevel();
-    renderShareOptions(document.getElementById('share-level-list'), level, changeShareLevel);
-
-    const profile = storage.getCurrentProfile();
-    const sent = profile ? readLastSent(profile.id) : null;
-    if (level === 'none') renderSendStatus('共有していません。');
-    else if (sent) renderSendStatus('前回ぶんは送信済みです。');
-    else renderSendStatus('まだ送っていません。10問解くと自動で送られます。');
-  }
-
-  const list = document.getElementById('profile-list');
-  list.innerHTML = '';
-
-  const profiles = storage.listProfiles();
-  const currentId = storage.getCurrentProfile()?.id;
-
-  profiles.forEach((profile) => {
-    const row = document.createElement('div');
-    row.className = 'profile-row';
-    if (profile.id === currentId) row.classList.add('is-current');
-
-    // 名前の部分を押すと、その人に切り替わる
-    const switchButton = document.createElement('button');
-    switchButton.className = 'profile-switch';
-    switchButton.textContent = profile.name;
-    switchButton.addEventListener('click', () => {
-      storage.switchProfile(profile.id);
-      renderProfileChip();
-      renderStreak();
-      renderProfileScreen();
-    });
-
-    // 名前の変更と削除。小さめのボタンで右側に並べる
-    const actions = document.createElement('div');
-    actions.className = 'profile-actions';
-
-    const renameButton = document.createElement('button');
-    renameButton.className = 'profile-action';
-    renameButton.textContent = '名前';
-    renameButton.addEventListener('click', () => {
-      const newName = window.prompt('新しい名前を入力してください', profile.name);
-      if (newName === null) return; // キャンセルされた
-      if (storage.renameProfile(profile.id, newName)) {
-        renderProfileChip();
-        renderProfileScreen();
-      }
-    });
-    actions.appendChild(renameButton);
-
-    // 利用者が1人しかいないときは削除できない(誰もいない状態になってしまうため)
-    if (profiles.length > 1) {
-      const deleteButton = document.createElement('button');
-      deleteButton.className = 'profile-action is-danger';
-      deleteButton.textContent = '削除';
-      deleteButton.addEventListener('click', () => {
-        const ok = window.confirm(
-          `「${profile.name}」の成績・ブックマークをすべて削除します。元に戻せません。よろしいですか。`
-        );
-        if (!ok) return;
-        storage.deleteProfile(profile.id);
-        renderProfileChip();
-        renderStreak();
-        renderProfileScreen();
-      });
-      actions.appendChild(deleteButton);
-    }
-
-    row.append(switchButton, actions);
-    list.appendChild(row);
-  });
-
-  // 利用者を切り替えたときは、前の人の書き出し結果が残らないように消しておく
-  hideExportOutput();
-}
-
-function onAddProfile() {
-  const name = window.prompt('追加する利用者の名前を入力してください');
-  if (name === null) return; // キャンセルされた
-  if (!String(name).trim()) return;
-  const profile = storage.addProfile(name, getTodayLocalDate());
-  renderProfileChip();
-  renderStreak();
-  renderProfileScreen();
-
-  // 送り先が設定されているときだけ、共有するかどうかを1回聞く。
-  // 設定の奥に置くと誰も気づかないので、名前を決めた直後のここで尋ねる
-  if (reportEndpoint.enabled) openShareAskScreen(profile);
-}
-
-// 「成績を共有しますか？」を1回だけ尋ねる画面を開く
-function openShareAskScreen(profile) {
-  document.getElementById('share-ask-name').textContent = profile.name;
-  renderShareOptions(
-    document.getElementById('share-ask-list'),
-    storage.getShareLevel(),
-    async (level) => {
-      await changeShareLevel(level);
-      showScreen('profile-screen');
-    }
-  );
-  showScreen('share-ask-screen');
-}
-
-function hideExportOutput() {
-  document.getElementById('export-output').hidden = true;
-  document.getElementById('copy-export-button').hidden = true;
-  document.getElementById('export-message').textContent = '';
-}
-
-/*
-  今の利用者の成績を、そのまま貼り付けられる文章にまとめる。
-  実習指導者へ提出したり、実習の記録として残したりするためのもの
-*/
-function buildExportText() {
-  const profile = storage.getCurrentProfile();
-  const history = storage.getHistory();
-  const lines = [];
-
-  lines.push('薬学実習クイズ 成績');
-  lines.push(`利用者: ${profile ? profile.name : '(不明)'}`);
-  lines.push(`書き出し日: ${getTodayLocalDate()}`);
-  lines.push(`連続学習: ${storage.getStreak()}日`);
-  lines.push('');
-
-  lines.push('【カテゴリー別】');
-  computeCategoryAccuracy(allQuestions, history, categories).forEach((row) => {
-    lines.push(
-      row.answered === 0
-        ? `${row.categoryName}: 未回答 (全${row.totalQuestions}問)`
-        : `${row.categoryName}: ${row.correct}/${row.answered}問正解 (${row.accuracyPercent}%) ／ 全${row.totalQuestions}問`
-    );
-  });
-  lines.push('');
-
-  lines.push('【難易度別】');
-  DIFFICULTIES.forEach((difficulty) => {
-    const pool = filterQuestions(allQuestions, { difficulty: difficulty.id });
-    const summary = summarizeAccuracy(pool, history);
-    lines.push(
-      summary.answered === 0
-        ? `${difficulty.name}: 未回答 (全${summary.totalQuestions}問)`
-        : `${difficulty.name}: ${summary.correct}/${summary.answered}問正解 (${summary.accuracyPercent}%) ／ 全${summary.totalQuestions}問`
-    );
-  });
-  lines.push('');
-
-  const overall = summarizeAccuracy(allQuestions, history);
-  lines.push(
-    overall.answered === 0
-      ? '合計: まだ回答がありません'
-      : `合計: ${overall.correct}/${overall.answered}問正解 (${overall.accuracyPercent}%) ／ 全${overall.totalQuestions}問`
-  );
-
-  return lines.join('\n');
-}
-
-function onExport() {
-  const output = document.getElementById('export-output');
-  output.textContent = buildExportText();
-  output.hidden = false;
-  document.getElementById('copy-export-button').hidden = false;
-  document.getElementById('export-message').textContent = '';
-}
-
-async function onCopyExport() {
-  const text = document.getElementById('export-output').textContent;
-  const message = document.getElementById('export-message');
-  try {
-    await navigator.clipboard.writeText(text);
-    message.textContent = 'コピーしました。';
-  } catch {
-    // 端末の設定によってはコピーできないことがあるので、手で選べる旨を伝える
-    message.textContent = 'コピーできませんでした。上の文章を長押しして選択してください。';
-  }
-}
-
-// ============================================================
-//  成績を自動で先生へ送る(実習生側)
-// ============================================================
-
-// 今の成績を短い文字列にまとめる。
-// 「正答率だけ」を選んでいる人には、間違えた問題を含まない形で作る。
-// 落とすのはこの端末の中なので、そもそも外へ出ていかない
-function buildReportCode(level) {
-  const params = {
-    history: storage.getHistory(),
-    questions: allQuestions,
-    categories,
-    date: getTodayLocalDate(),
-    streak: storage.getStreak(),
-  };
-  return level === 'summary' ? encodeSummaryReport(params) : encodeReport(params);
-}
-
-// 送信の状況を利用者画面に出す。押すボタンはないので、状態を伝えるだけ
-function renderSendStatus(text) {
-  const el = document.getElementById('send-report-status');
-  if (el) el.textContent = text;
-}
-
-// 前回どこまで送ったかを読み書きする。利用者ごとに分けて覚える
-function readLastSent(profileId) {
-  try {
-    return window.localStorage.getItem(lastSentKey(profileId));
-  } catch {
-    return null;
-  }
-}
-function writeLastSent(profileId, code) {
-  try {
-    window.localStorage.setItem(lastSentKey(profileId), code);
-  } catch {
-    // 保存できなくても動作は続ける(次回また送るだけ)
-  }
-}
-
-/**
- * 成績を先生へ送る。
- *
- * 画面を止めないよう、裏側でそっと実行する。
- * 電波がないなど失敗した場合も何も言わず、次に開いたときにもう一度試す。
- */
-async function syncReport() {
-  if (!reportEndpoint.enabled || !reportEndpoint.url) return;
-
-  const profile = storage.getCurrentProfile();
-  if (!profile) return;
-
-  // 「共有しない」の人は、ここで何もせずに戻る。これが初期値
-  const level = storage.getShareLevel();
-  if (level === 'none') return;
-
-  const code = buildReportCode(level);
-  if (!needsSending(readLastSent(profile.id), code)) return;
-
-  try {
-    await sendReport(reportEndpoint.url, { name: profile.name, code });
-    writeLastSent(profile.id, code);
-    renderSendStatus(`最後に送った時刻: ${new Date().toLocaleString('ja-JP')}`);
-  } catch {
-    // 失敗はここで飲み込む。実習生に通信の失敗を見せても対処のしようがないため
-    renderSendStatus('まだ送れていません。電波のあるところで開くと自動で送られます。');
-  }
-}
-
-/**
- * 共有の段階を選ぶボタンを並べる。
- * 利用者画面と、利用者を作った直後の確認画面の両方で使う。
- */
-function renderShareOptions(container, currentLevel, onChoose) {
-  container.innerHTML = '';
-  SHARE_OPTIONS.forEach((option) => {
-    const button = document.createElement('button');
-    button.className = 'share-item';
-    button.dataset.level = option.id; // 段階ごとに色を変えるための目印(CSS側で使う)
-    if (option.id === currentLevel) button.classList.add('is-selected');
-
-    const name = document.createElement('span');
-    name.className = 'share-name';
-    name.textContent = option.name;
-
-    const desc = document.createElement('span');
-    desc.className = 'share-desc';
-    desc.textContent = option.description;
-
-    button.append(name, desc);
-    button.addEventListener('click', () => onChoose(option.id));
-    container.appendChild(button);
-  });
-}
-
-/**
- * 共有の設定を変える。
- *
- * 「共有する」から「共有しない」に戻したときは、
- * これまでに送った分も消すかどうかを尋ねる。
- * 一度送ったら取り消せない、という状態にしないため。
- */
-async function changeShareLevel(nextLevel) {
-  const profile = storage.getCurrentProfile();
-  const previous = storage.getShareLevel();
-  const alreadySent = profile ? readLastSent(profile.id) : null;
-
-  storage.setShareLevel(nextLevel);
-  // 送る中身が変わるので、前回の記録は捨てて次回あらためて送り直す
-  storage.clearLastSent();
-
-  renderProfileScreen();
-
-  if (nextLevel === 'none') {
-    // まだ一度も送っていなければ、消すものがないので尋ねない
-    if (previous !== 'none' && alreadySent && reportEndpoint.enabled && reportEndpoint.url && profile) {
-      const wantsDelete = window.confirm(
-        `これまでに送った成績も、先生の画面から消しますか？
-
-「OK」を押すと消えます。
-「キャンセル」を押すと、これまでの分は残ったまま、今後の更新だけが止まります。`
-      );
-      if (wantsDelete) {
-        renderSendStatus('これまでの分を消しています…');
-        try {
-          await deleteReport(reportEndpoint.url, { name: profile.name });
-          renderSendStatus('共有していません。これまでに送った分も消しました。');
-          return;
-        } catch (error) {
-          renderSendStatus(`消せませんでした：${error.message}`);
-          return;
-        }
-      }
-    }
-    renderSendStatus('共有していません。');
-    return;
-  }
-
-  // 共有する側に変えたときは、その場で一度送る
-  renderSendStatus('送っています…');
-  await syncReport();
-}
-
-// ============================================================
-//  みんなの成績をまとめて見る(先生側)
-// ============================================================
-
-// 先生の端末に覚えさせた合言葉を読み書きする
-function readTeacherKey() {
-  try {
-    return window.localStorage.getItem(TEACHER_KEY_STORAGE) || '';
-  } catch {
-    return '';
-  }
-}
-function writeTeacherKey(key) {
-  try {
-    window.localStorage.setItem(TEACHER_KEY_STORAGE, key);
-  } catch {
-    // 覚えられなくても、毎回入力すれば使える
-  }
-}
-
-// 先生の画面を開いたときの下準備。合言葉を覚えていれば入れておく
-function renderReportScreen() {
-  const input = document.getElementById('report-key');
-  if (input && !input.value) input.value = readTeacherKey();
-}
-
-// 合言葉を使って、届いている成績をまとめて受け取る
-async function onLoadReports() {
-  const message = document.getElementById('report-message');
-  const output = document.getElementById('report-output');
-  const key = document.getElementById('report-key').value.trim();
-
-  output.textContent = '';
-
-  if (!reportEndpoint.enabled || !reportEndpoint.url) {
-    message.textContent = '送り先がまだ設定されていません。';
-    return;
-  }
-  if (!key) {
-    message.textContent = '合言葉を入れてください。';
-    return;
-  }
-
-  message.textContent = '読み込んでいます…';
-
-  let rows;
-  try {
-    rows = await fetchReports(reportEndpoint.url, key);
-  } catch (error) {
-    message.textContent = `読み込めませんでした：${error.message}`;
-    return;
-  }
-
-  writeTeacherKey(key); // うまくいったときだけ覚える
-
-  // 受け取った文字列を、正誤の記録に戻す
-  const reports = [];
-  let skipped = 0;
-  for (const row of rows) {
-    const decoded = decodeAnyReport(row.code, categories);
-    if (!decoded) {
-      skipped += 1;
-      continue;
-    }
-    reports.push({ name: row.name, updatedAt: row.updatedAt, ...decoded });
-  }
-
-  if (reports.length === 0) {
-    message.textContent =
-      skipped > 0 ? '届いた成績を読み取れませんでした。' : 'まだ誰からも届いていません。';
-    return;
-  }
-
-  message.textContent =
-    `${reports.length}人分を読み込みました。` + (skipped > 0 ? `（読めなかったものが${skipped}件ありました）` : '');
-
-  renderReports(reports, output);
-}
-
-// 通信を使わず、貼り付けた内容から読む(逃げ道)
-function onPasteReports() {
-  const message = document.getElementById('report-message');
-  const output = document.getElementById('report-output');
-  const pasted = document.getElementById('report-input').value;
-
-  output.textContent = '';
-
-  if (!pasted.trim()) {
-    message.textContent = '先に成績データを貼り付けてください。';
-    return;
-  }
-
-  const { reports, skipped } = parsePastedReports(pasted, categories);
-
-  if (reports.length === 0) {
-    message.textContent = '成績データが見つかりませんでした。「名前」と「成績データ」の列をコピーできているか確認してください。';
-    return;
-  }
-
-  message.textContent =
-    `${reports.length}人分を読み込みました。` + (skipped > 0 ? `（読めなかった行が${skipped}行ありました）` : '');
-
-  renderReports(reports, output);
-}
-
-function onClearReports() {
-  document.getElementById('report-input').value = '';
-  document.getElementById('report-output').textContent = '';
-  document.getElementById('report-message').textContent = '';
-}
-
-// 読み込んだ全員分を、表と一覧にして画面に並べる
-function renderReports(reports, output) {
-  // 一人ひとりについて、合計とカテゴリー別をあらかじめ計算しておく。
-  // 「正答率だけ」を共有している人は問題ごとの記録が届かないので、
-  // 届いた数だけを使って同じ形に整えてから並べる
-  const rows = reports.map((report) =>
-    report.kind === 'summary' ? summarizeFromCounts(report) : summarizeFromHistory(report)
-  );
-
-  output.appendChild(renderReportSummary(rows));
-  output.appendChild(renderReportCategoryTable(rows));
-  rows.forEach((row) => output.appendChild(renderReportWrongList(row)));
-}
-
-// 問題ごとの記録が届いている人(すべて共有)の集計
-function summarizeFromHistory(report) {
-  return {
-    ...report,
-    overall: summarizeAccuracy(allQuestions, report.history),
-    byCategory: computeCategoryAccuracy(allQuestions, report.history, categories),
-  };
-}
-
-// 正答率だけが届いている人の集計。
-// 表の形は揃えておき、間違えた問題の一覧だけ出せない旨を伝える
-function summarizeFromCounts(report) {
-  const byCategory = categories.map((category) => {
-    const counts = report.byCategory.get(category.id) || { correct: 0, answered: 0 };
-    const totalQuestions = allQuestions.filter((q) => q.category === category.id).length;
-    return {
-      categoryId: category.id,
-      categoryName: category.name,
-      correct: counts.correct,
-      answered: counts.answered,
-      totalQuestions,
-      accuracyPercent: counts.answered === 0 ? 0 : Math.round((counts.correct / counts.answered) * 100),
-    };
-  });
-
-  return {
-    ...report,
-    overall: {
-      correct: report.correctCount,
-      answered: report.answeredCount,
-      totalQuestions: allQuestions.length,
-      accuracyPercent:
-        report.answeredCount === 0 ? 0 : Math.round((report.correctCount / report.answeredCount) * 100),
-    },
-    byCategory,
-  };
-}
-
-// (1) ひとまとめの一覧表。誰がどれだけ進んでいるかをまず見る
-function renderReportSummary(rows) {
-  const section = document.createElement('section');
-  section.className = 'report-block';
-
-  const heading = document.createElement('h3');
-  heading.className = 'section-title';
-  heading.textContent = '全体';
-  section.appendChild(heading);
-
-  const answeredTotal = rows.reduce((sum, r) => sum + r.overall.answered, 0);
-  const correctTotal = rows.reduce((sum, r) => sum + r.overall.correct, 0);
-  const note = document.createElement('p');
-  note.className = 'screen-note';
-  note.textContent =
-    `${rows.length}人 ／ 合計${answeredTotal}問回答 ／ 全体の正答率 ` +
-    `${answeredTotal === 0 ? 0 : Math.round((correctTotal / answeredTotal) * 100)}%`;
-  section.appendChild(note);
-
-  section.appendChild(
-    buildTable(
-      ['名前', '回答数', '正答率', '連続学習', '最終更新'],
-      rows.map((r) => [
-        r.name,
-        `${r.overall.answered}問`,
-        r.overall.answered === 0 ? '—' : `${r.overall.accuracyPercent}%`,
-        `${r.streak}日`,
-        r.updatedAt || r.date,
-      ])
-    )
-  );
-  return section;
-}
-
-// (2) 分野ごとの正答率を、実習生を横に並べて比べる
-function renderReportCategoryTable(rows) {
-  const section = document.createElement('section');
-  section.className = 'report-block';
-
-  const heading = document.createElement('h3');
-  heading.className = 'section-title';
-  heading.textContent = '分野ごとの正答率';
-  section.appendChild(heading);
-
-  const note = document.createElement('p');
-  note.className = 'screen-note';
-  note.textContent = '「正解数/回答数」と正答率です。まだ答えていない分野は「—」になります。';
-  section.appendChild(note);
-
-  const body = categories.map((category, index) => {
-    const cells = [category.name];
-    rows.forEach((row) => {
-      const stat = row.byCategory[index];
-      cells.push(stat.answered === 0 ? '—' : `${stat.correct}/${stat.answered}（${stat.accuracyPercent}%）`);
-    });
-    return cells;
-  });
-
-  section.appendChild(buildTable(['分野', ...rows.map((r) => r.name)], body));
-  return section;
-}
-
-// (3) 一人ずつ、間違えた問題を並べる。指導のときにそのまま使えるようにする
-function renderReportWrongList(row) {
-  const section = document.createElement('section');
-  section.className = 'report-block';
-
-  // 「正答率だけ」を選んでいる人は、間違えた問題が端末から出ていない。
-  // 空欄にすると「全問正解した」と読み違えるので、はっきり書いておく
-  if (row.kind === 'summary') {
-    const heading = document.createElement('h3');
-    heading.className = 'section-title';
-    heading.textContent = `${row.name} が間違えた問題`;
-    section.appendChild(heading);
-
-    const note = document.createElement('p');
-    note.className = 'screen-note';
-    note.textContent = 'この方は「正答率だけ共有する」を選んでいるため、間違えた問題は届いていません。';
-    section.appendChild(note);
-    return section;
-  }
-
-  // 直近の回答が不正解だった問題を集める
-  const wrong = allQuestions.filter((q) => row.history[q.id]?.lastResult === 'wrong');
-
-  const heading = document.createElement('h3');
-  heading.className = 'section-title';
-  heading.textContent = `${row.name} が間違えた問題（${wrong.length}問）`;
-  section.appendChild(heading);
-
-  if (wrong.length === 0) {
-    const note = document.createElement('p');
-    note.className = 'screen-note';
-    note.textContent = '直近の回答で間違えた問題はありません。';
-    section.appendChild(note);
-    return section;
-  }
-
-  const categoryName = new Map(categories.map((c) => [c.id, c.name]));
-  const difficultyName = new Map(DIFFICULTIES.map((d) => [d.id, d.name]));
-
-  const list = document.createElement('ol');
-  list.className = 'report-wrong-list';
-  wrong.forEach((question) => {
-    const item = document.createElement('li');
-
-    const tag = document.createElement('span');
-    tag.className = 'report-wrong-tag';
-    tag.textContent = `${categoryName.get(question.category) ?? question.category} ・ ${difficultyName.get(question.difficulty) ?? question.difficulty}`;
-    item.appendChild(tag);
-
-    const text = document.createElement('p');
-    text.className = 'report-wrong-question';
-    // 疑義照会は症例が長いので、冒頭だけを見出しとして出す
-    text.textContent =
-      question.question.length > 90 ? question.question.slice(0, 90).replace(/\n/g, ' ') + '…' : question.question;
-    item.appendChild(text);
-
-    const answer = document.createElement('p');
-    answer.className = 'report-wrong-answer';
-    answer.textContent = `正解: ${question.choices[question.correctIndex]}`;
-    item.appendChild(answer);
-
-    list.appendChild(item);
-  });
-  section.appendChild(list);
-  return section;
-}
-
-// 表を組み立てる小さな道具。横に長い表はCSS側で横スクロールさせる
-function buildTable(headers, bodyRows) {
-  const wrapper = document.createElement('div');
-  wrapper.className = 'report-table-wrap';
-
-  const table = document.createElement('table');
-  table.className = 'report-table';
-
-  const thead = document.createElement('thead');
-  const headRow = document.createElement('tr');
-  headers.forEach((label) => {
-    const th = document.createElement('th');
-    th.textContent = label;
-    headRow.appendChild(th);
-  });
-  thead.appendChild(headRow);
-  table.appendChild(thead);
-
-  const tbody = document.createElement('tbody');
-  bodyRows.forEach((cells) => {
-    const tr = document.createElement('tr');
-    cells.forEach((value, index) => {
-      const cell = document.createElement(index === 0 ? 'th' : 'td');
-      cell.textContent = value;
-      tr.appendChild(cell);
-    });
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
-
-  wrapper.appendChild(table);
-  return wrapper;
-}
-
 function renderStreak() {
   const streak = storage.getStreak();
   // まだ1問も解いていないときに「0日目」と出ると不自然なので、
@@ -1371,56 +471,21 @@ function setupNav() {
     button.addEventListener('click', () => showScreen(button.dataset.screen));
   });
   document.getElementById('weak-point-button').addEventListener('click', startWeakPointQuiz);
-  // 難易度選択画面から、カテゴリー一覧へ戻る
-  document.getElementById('difficulty-back-button').addEventListener('click', () => showScreen('home-screen'));
-  // 利用者の切り替え画面
-  document.getElementById('profile-chip').addEventListener('click', () => showScreen('profile-screen'));
-  document.getElementById('profile-back-button').addEventListener('click', () => showScreen('home-screen'));
-  document.getElementById('add-profile-button').addEventListener('click', onAddProfile);
-  document.getElementById('export-button').addEventListener('click', onExport);
-  document.getElementById('copy-export-button').addEventListener('click', onCopyExport);
-
-  // 先生用:みんなの成績をまとめて見る画面。
-  // 実習生の画面には入口を置かず、URLの末尾に #teacher を付けて開いたときだけ出す
-  document.getElementById('report-back-button').addEventListener('click', () => {
-    // 戻るときは #teacher を消しておく。付けっぱなしだと、
-    // 次に開いたときにいきなり先生用の画面が出てしまうため
-    history.replaceState(null, '', location.pathname + location.search);
-    showScreen('home-screen');
-  });
-  document.getElementById('report-load-button').addEventListener('click', onLoadReports);
-  document.getElementById('report-paste-button').addEventListener('click', onPasteReports);
-  document.getElementById('report-clear-button').addEventListener('click', onClearReports);
   document.getElementById('next-question-button').addEventListener('click', onNextQuestion);
   document.getElementById('bookmark-toggle-button').addEventListener('click', onToggleBookmark);
   // 結果画面のボタン
   document.getElementById('retry-button').addEventListener('click', () => {
     if (lastQuizStarter) lastQuizStarter(); // 直前と同じ内容をもう一度出題する
   });
-  // 解き終わったあと、同じカテゴリーの別の難易度にすぐ移れるようにする
-  document.getElementById('other-difficulty-button').addEventListener('click', () => showScreen('difficulty-screen'));
   document.getElementById('back-home-button').addEventListener('click', () => showScreen('home-screen'));
-}
-
-// URLの末尾が #teacher なら先生用の画面を出す。
-// 実習生には入口が見えないようにしつつ、先生はこのURLをブックマークしておけば開ける。
-// (あくまで「見えにくくする」だけで、鍵をかけているわけではない)
-function openTeacherScreenIfRequested() {
-  if (location.hash === '#teacher') showScreen('report-screen');
 }
 
 async function init() {
   await loadData();
   setupNav();
   renderHome();
-  renderProfileChip();
   renderStreak();
   showScreen('home-screen');
-  openTeacherScreenIfRequested();
-  // 前回うまく送れていなかった場合に備えて、起動時にも一度だけ試す
-  syncReport();
-  // アプリを開いたままURLの末尾を書き換えた場合にも反応させる
-  window.addEventListener('hashchange', openTeacherScreenIfRequested);
 }
 
 init();
