@@ -1517,7 +1517,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 | 茶の製造法 | `manufacturing` | 55 |
 | 合計 | | **225** |
 
-- [ ] **Step 1: 分野ごとに公開資料を実際に読む**
+- [x] **Step 1: 分野ごとに公開資料を実際に読む**
 
 **記憶だけで数値を書かない。** 分野に取りかかる前に、必ず次を行う。
 
@@ -1535,7 +1535,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 | 茶の栽培 | 農研機構（果樹茶業研究部門）／ 静岡県茶業研究センター ／ 鹿児島県・京都府の茶業試験研究機関 ／ 農林水産省の病害虫・農薬関連ページ |
 | 茶の製造法 | 農研機構の製茶技術資料 ／ 各県茶業研究所の製茶工程解説 ／ 日本茶業中央会 |
 
-- [ ] **Step 2: 1分野ずつ作問して追記する**
+- [x] **Step 2: 1分野ずつ作問して追記する**
 
 問題の書き方の決まり:
 
@@ -1565,7 +1565,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 }
 ```
 
-- [ ] **Step 3: 1分野書き終えるたびに検査にかける**
+- [x] **Step 3: 1分野書き終えるたびに検査にかける**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -1574,7 +1574,7 @@ node --test tests/validate-questions.test.js
 
 期待: PASS。エラーが出たら、どの問題のどこが悪いか表示されるので直す。
 
-- [ ] **Step 4: 問数と裏取り率を数える**
+- [x] **Step 4: 問数と裏取り率を数える**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -1594,7 +1594,7 @@ console.log('合計', qs.length, '問 / 裏取り済み', qs.filter(q => q.verif
 
 期待: 5分野の合計が225問。
 
-- [ ] **Step 5: 正解番号が偏っていないか確かめる**
+- [x] **Step 5: 正解番号が偏っていないか確かめる**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -1609,7 +1609,7 @@ console.log('正解番号の分布:', counts);
 
 期待: 5つの数字がおおむね均等。どれか1つが全体の4割を超えていたら作り直す。
 
-- [ ] **Step 6: コミット**
+- [x] **Step 6: コミット**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -1646,7 +1646,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 | 茶の品質審査と鑑定 | `inspection` | 35 |
 | 合計 | | **175** |
 
-- [ ] **Step 1: 分野ごとに公開資料を実際に読む**
+- [x] **Step 1: 分野ごとに公開資料を実際に読む**
 
 Task 7 の Step 1 と同じ手順。**URLを推測で書かず、検索して実在を確かめてから開く。**
 
@@ -1658,7 +1658,7 @@ Task 7 の Step 1 と同じ手順。**URLを推測で書かず、検索して実
 | 茶の利用 | 農林水産省の茶の需要動向資料 ／ 日本茶業中央会 ／ 抹茶の食品利用に関する公開資料 |
 | 茶の品質審査と鑑定 | 日本茶業中央会の審査基準 ／ 全国茶品評会の審査要領 ／ 農研機構の官能評価資料 |
 
-- [ ] **Step 2: 1分野ずつ作問して追記する**
+- [x] **Step 2: 1分野ずつ作問して追記する**
 
 Task 7 の Step 2 と同じ決まりに従う。**次の分野は数値の取り違えが起きやすいので特に慎重に扱う。**
 
@@ -1668,7 +1668,7 @@ Task 7 の Step 2 と同じ決まりに従う。**次の分野は数値の取り
 
 これらは**記憶で書かず、必ず読んだ資料の数値を使う**。資料が見つからなければ `verified: false` にする。
 
-- [ ] **Step 3: 1分野書き終えるたびに検査にかける**
+- [x] **Step 3: 1分野書き終えるたびに検査にかける**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -1677,7 +1677,7 @@ node --test tests/validate-questions.test.js
 
 期待: PASS。
 
-- [ ] **Step 4: 全体の問数と裏取り率を数える**
+- [x] **Step 4: 全体の問数と裏取り率を数える**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -1697,11 +1697,11 @@ console.log('合計', qs.length, '問 / 裏取り済み', qs.filter(q => q.verif
 
 期待: 10分野すべてが埋まり、合計400問。
 
-- [ ] **Step 5: 正解番号の偏りを確かめる**
+- [x] **Step 5: 正解番号の偏りを確かめる**
 
 Task 7 の Step 5 と同じコマンドを実行する。期待も同じ。
 
-- [ ] **Step 6: コミット**
+- [x] **Step 6: コミット**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -1727,7 +1727,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Consumes: Task 1〜8 のすべて
 - Produces: GitHub Pages の公開URL
 
-- [ ] **Step 1: 全テストを実行する**
+- [x] **Step 1: 全テストを実行する**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -1736,7 +1736,7 @@ node --test
 
 期待: PASS（全ファイル）。
 
-- [ ] **Step 2: PCのブラウザで一通り触る**
+- [x] **Step 2: PCのブラウザで一通り触る**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -1755,7 +1755,7 @@ npm start
 8. 「正答率」画面に10分野の正答率が出る
 9. ブックマークが付け外しできる
 
-- [ ] **Step 3: README.md を書く**
+- [x] **Step 3: README.md を書く**
 
 次の内容を含める。
 
@@ -1766,7 +1766,7 @@ npm start
 - 「※ テキストで要確認」バッジの意味
 - 設計書と実装計画へのリンク
 
-- [ ] **Step 4: キャッシュの版番号を上げる**
+- [x] **Step 4: キャッシュの版番号を上げる**
 
 `service-worker.js` の `CACHE_VERSION` を `'v1'` から `'v2'` に上げる。
 問題データを入れたあとなので、古い空のデータが端末に残らないようにする。
