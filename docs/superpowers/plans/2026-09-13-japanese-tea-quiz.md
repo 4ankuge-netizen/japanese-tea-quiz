@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 妻が2026年11月8日の日本茶インストラクター第一次試験（五肢択一）に向けて、スマホで反復練習できるクイズアプリを2日で完成させる。
+**Goal:** 受験者が2026年11月8日の日本茶インストラクター第一次試験（五肢択一）に向けて、スマホで反復練習できるクイズアプリを2日で完成させる。
 
 **Architecture:** 既存の完成済みアプリ `pharmacy quiz` を丸ごとコピーし、薬剤師専用機能を削除して日本茶用に作り替える。出題エンジンは選択肢の個数に依存しない作りなので五肢択一はそのまま動く。新規に作るのは「模試モード」と「※テキストで要確認バッジ」の2つだけ。
 
@@ -12,8 +12,8 @@
 
 ## Global Constraints
 
-- 作業ディレクトリ: `C:\Users\kokky\OneDrive\デスクトップ\.claude\japanese tea`
-- コピー元: `C:\Users\kokky\OneDrive\デスクトップ\.claude\pharmacy quiz`
+- 作業ディレクトリ: このリポジトリのルート（以下のコマンドはここで実行する）
+- コピー元: 同じ階層にある `pharmacy quiz` フォルダ
 - 選択肢は**必ずちょうど5つ**（本番が五肢択一のため）。4つも6つも検査で弾く。
 - 問題データに `difficulty` フィールドは**使わない**。
 - 分野IDは次の10種のみ: `history` `industry` `teaching` `cultivation` `manufacturing` `health` `chemistry` `brewing` `utilization` `inspection`
@@ -71,8 +71,7 @@
 - [x] **Step 1: 必要なファイルだけをコピーする**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
-SRC="/c/Users/kokky/OneDrive/デスクトップ/.claude/pharmacy quiz"
+SRC="../pharmacy quiz"
 mkdir -p css js icons tests tools data
 cp "$SRC/index.html" .
 cp "$SRC/manifest.json" "$SRC/service-worker.js" "$SRC/dev-server.js" "$SRC/package.json" "$SRC/.gitignore" "$SRC/.nojekyll" .
@@ -86,7 +85,6 @@ cp "$SRC/tools/add-question.mjs" "$SRC/tools/shuffle-choices.mjs" tools/
 - [x] **Step 2: コピーされたか確認する**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 test -f index.html && test -f js/app.js && test -f css/style.css && echo "OK: 主要ファイルあり"
 test ! -d node_modules && test ! -d .git && echo "OK: 不要物なし"
 ```
@@ -96,7 +94,6 @@ test ! -d node_modules && test ! -d .git && echo "OK: 不要物なし"
 - [x] **Step 3: report系への参照が残っていないか探す**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 grep -rn "report-code\|report-sync\|report-endpoint" --include="*.js" --include="*.html" --include="*.json" .
 ```
 
@@ -109,7 +106,6 @@ grep -rn "report-code\|report-sync\|report-endpoint" --include="*.js" --include=
 - [x] **Step 5: git リポジトリを作って最初のコミットをする**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 git init
 git add -A
 git commit -m "chore: pharmacy quiz をコピーして日本茶クイズの土台を作る
@@ -277,7 +273,6 @@ test('data/questions.json に形式エラーが1件もない', async () => {
 - [x] **Step 2: テストを実行して失敗することを確認する**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 node --test tests/validate-questions.test.js
 ```
 
@@ -441,7 +436,6 @@ export function validateQuestions(questions) {
 - [x] **Step 6: テストを実行して全部通ることを確認する**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 node --test tests/validate-questions.test.js
 ```
 
@@ -450,7 +444,6 @@ node --test tests/validate-questions.test.js
 - [x] **Step 7: コミット**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 git add data/categories.json data/questions.json js/validate-questions.js tests/validate-questions.test.js
 git commit -m "feat: 出題10分野を定義し、問題データの検査を日本茶用に作り替える
 
@@ -614,7 +607,7 @@ async function loadData() {
     薬のアプリでは未確認の問題を隠していたが、この試験対策では方針が逆。
     テキストを取り込めない以上、公開資料だけでは埋まらない範囲が必ず残る。
     隠してしまうと試験範囲に穴ができるので、出題したうえで
-    「テキストで要確認」の印を付け、妻が手元のテキストで照らし合わせられるようにする。
+    「テキストで要確認」の印を付け、受験者が手元のテキストで照らし合わせられるようにする。
   */
   allQuestions = await questionsRes.json();
   categories = await categoriesRes.json();
@@ -657,7 +650,6 @@ export function filterQuestions(questions, { categoryId } = {}) {
 - [x] **Step 10: 消した機能のテストを外す**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 grep -n "share\|Share\|difficulty\|pharmacyQuiz" tests/storage.test.js tests/quiz-engine.test.js
 ```
 
@@ -666,7 +658,6 @@ grep -n "share\|Share\|difficulty\|pharmacyQuiz" tests/storage.test.js tests/qui
 - [x] **Step 11: テストを実行して全部通ることを確認する**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 node --test
 ```
 
@@ -675,7 +666,6 @@ node --test
 - [x] **Step 12: 残骸が無いか確認する**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 grep -rn "report\|difficulty\|profile-screen\|share\|pharmacyQuiz\|疑義照会\|PMDA" --include="*.js" --include="*.html" . | grep -v node_modules
 ```
 
@@ -684,7 +674,6 @@ grep -rn "report\|difficulty\|profile-screen\|share\|pharmacyQuiz\|疑義照会\
 - [x] **Step 13: コミット**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 git add -A
 git commit -m "refactor: 薬剤師専用の機能を削除する
 
@@ -821,7 +810,6 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 npm start
 ```
 
@@ -835,7 +823,6 @@ npm start
 - [x] **Step 7: テストを実行する**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 node --test
 ```
 
@@ -844,7 +831,6 @@ node --test
 - [x] **Step 8: コミット**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 git add -A
 git commit -m "feat: 裏付けの取れていない問題に「テキストで要確認」の印を出す
 
@@ -985,7 +971,6 @@ test('問題が0問でも落ちない', () => {
 - [x] **Step 2: テストを実行して失敗することを確認する**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 node --test tests/mock-exam.test.js
 ```
 
@@ -1064,7 +1049,6 @@ export function gradeMockExam(questions, resultsById, categories) {
 - [x] **Step 4: テストを実行して全部通ることを確認する**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 node --test tests/mock-exam.test.js
 ```
 
@@ -1073,7 +1057,6 @@ node --test tests/mock-exam.test.js
 - [x] **Step 5: コミット（計算部分だけ先に入れる）**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 git add js/mock-exam.js tests/mock-exam.test.js
 git commit -m "feat: 模試モードの計算部分(残り時間と採点)を追加
 
@@ -1303,7 +1286,6 @@ function onNextQuestion() {
 ```
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 npm start
 ```
 
@@ -1322,7 +1304,6 @@ npm start
 - [x] **Step 11: テストを実行する**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 node --test
 ```
 
@@ -1331,7 +1312,6 @@ node --test
 - [x] **Step 12: コミット**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 git add -A
 git commit -m "feat: 模試モードを画面につなぎ込む
 
@@ -1463,7 +1443,6 @@ const APP_SHELL_FILES = [
 `"explanation": "確認用"`、`"verified": false` とし、`id` は `<分野ID>-001`、`category` は各分野IDにする。
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 npm start
 ```
 
@@ -1476,7 +1455,6 @@ npm start
 - [x] **Step 9: テストを実行する**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 node --test
 ```
 
@@ -1485,7 +1463,6 @@ node --test
 - [x] **Step 10: コミット**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 git add -A
 git commit -m "feat: 見た目を日本茶用にして、PWAの設定を更新する
 
@@ -1568,7 +1545,6 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - [x] **Step 3: 1分野書き終えるたびに検査にかける**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 node --test tests/validate-questions.test.js
 ```
 
@@ -1577,7 +1553,6 @@ node --test tests/validate-questions.test.js
 - [x] **Step 4: 問数と裏取り率を数える**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 node --input-type=module -e "
 import fs from 'fs';
 const qs = JSON.parse(fs.readFileSync('data/questions.json', 'utf8'));
@@ -1597,7 +1572,6 @@ console.log('合計', qs.length, '問 / 裏取り済み', qs.filter(q => q.verif
 - [x] **Step 5: 正解番号が偏っていないか確かめる**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 node --input-type=module -e "
 import fs from 'fs';
 const qs = JSON.parse(fs.readFileSync('data/questions.json', 'utf8'));
@@ -1612,7 +1586,6 @@ console.log('正解番号の分布:', counts);
 - [x] **Step 6: コミット**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 git add data/questions.json
 git commit -m "feat: 問題データ第1弾(歴史・茶業・伝え方・栽培・製造)225問を追加
 
@@ -1671,7 +1644,6 @@ Task 7 の Step 2 と同じ決まりに従う。**次の分野は数値の取り
 - [x] **Step 3: 1分野書き終えるたびに検査にかける**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 node --test tests/validate-questions.test.js
 ```
 
@@ -1680,7 +1652,6 @@ node --test tests/validate-questions.test.js
 - [x] **Step 4: 全体の問数と裏取り率を数える**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 node --input-type=module -e "
 import fs from 'fs';
 const qs = JSON.parse(fs.readFileSync('data/questions.json', 'utf8'));
@@ -1704,7 +1675,6 @@ Task 7 の Step 5 と同じコマンドを実行する。期待も同じ。
 - [x] **Step 6: コミット**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 git add data/questions.json
 git commit -m "feat: 問題データ第2弾(健康科学・化学・淹れ方・利用・品質審査)175問を追加
 
@@ -1730,7 +1700,6 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - [x] **Step 1: 全テストを実行する**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 node --test
 ```
 
@@ -1739,7 +1708,6 @@ node --test
 - [x] **Step 2: PCのブラウザで一通り触る**
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 npm start
 ```
 
@@ -1776,7 +1744,6 @@ npm start
 **注意: ここから先はユーザーの確認を取ってから実行する。** リポジトリを作って公開する操作なので、勝手に進めない。
 
 ```bash
-cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
 git add -A
 git commit -m "docs: READMEを追加し、キャッシュの版番号を上げる
 
@@ -1798,7 +1765,7 @@ gh repo create japanese-tea-quiz --private --source=. --push
 3. ブラウザのメニューから「ホーム画面に追加」ができる
 4. 機内モードにしても、ホーム画面のアイコンから開いて問題が解ける
 
-- [ ] **Step 8: URLを妻に渡す**
+- [ ] **Step 8: URLを受験者に渡す**
 
 ---
 
