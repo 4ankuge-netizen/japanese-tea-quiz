@@ -1,0 +1,11 @@
+{
+  "name": "薬学実習クイズ",
+  "short_name": "薬学クイズ",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F7F4ED",
+  "theme_color": "#1B2A4A",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

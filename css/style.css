@@ -1,0 +1,1575 @@
+/*
+  ===========================================================================
+  デザインのルール(トークン)をまとめておく場所。
+
+  色や文字の大きさをあちこちに直接書かず、ここで決めた名前(変数)を使い回す。
+  そうしておくと「やっぱりこの緑をもう少し濃く」のような調整が1箇所で済む。
+
+  配色の考え方:
+  - 藍(あい)   … 教科書や公式文書のような、きちんとした印象の紺色。ヘッダーに使う
+  - 薬局の緑   … 日本の調剤薬局の看板でよく使われる緑。「進む」ボタンなどに使う
+  - 処方箋紙の白… 真っ白ではなく、少し温かみのある紙の色。背景に使う
+  - 朱色(判子) … 正解したときに押される判子の色
+  - カテゴリー色… 10個のカテゴリーに1色ずつ。ホーム画面をひと目で見分けられるようにする
+  ===========================================================================
+*/
+:root {
+  /* --- 基本の色 --- */
+  --indigo-900: #101E36; /* いちばん濃い藍。ヘッダーの端 */
+  --indigo-700: #1B2A4A; /* 基準の藍 */
+  --indigo-500: #2C4372; /* 明るめの藍。ヘッダーのグラデーションに使う */
+  --green-600: #14705A;  /* 押せるボタンの緑(濃いめ) */
+  --green-500: #1B7C64;  /* 基準の緑 */
+  --green-100: #E3F1EB;  /* 正解の選択肢の背景 */
+  --vermillion: #B5483D; /* 判子・不正解の朱色 */
+  --vermillion-100: #FBEDEB;
+  /* 緑や朱色で塗りつぶした上に載せる文字の色。
+     明るいモードでは白でよいが、暗いモードでは緑自体が明るくなるので、
+     白のままだと文字が読みにくい。そこで色の名前として分けておく */
+  --on-green: #FFFFFF;
+  --on-vermillion: #FFFFFF;
+
+  /* --- 面と文字の色 --- */
+  --bg: #F7F4ED;          /* 画面全体の背景(紙の色) */
+  --bg-tint: #EFEAE0;     /* 背景より少し濃い面。棒グラフの溝など */
+  --surface: #FFFFFF;     /* カードの面 */
+  --ink: #22201C;         /* 本文の文字 */
+  --ink-soft: #625C51;    /* 補足の文字 */
+  --ink-faint: #8E877A;   /* いちばん薄い文字 */
+  --line: #E6E0D3;        /* 罫線 */
+  --line-strong: #D3CBB9;
+
+  /* --- 影(浮き上がって見せるための、やわらかい影) --- */
+  --shadow-sm: 0 1px 2px rgba(40, 33, 20, 0.05), 0 1px 3px rgba(40, 33, 20, 0.05);
+  --shadow-md: 0 2px 4px rgba(40, 33, 20, 0.05), 0 6px 16px rgba(40, 33, 20, 0.07);
+  --shadow-lg: 0 4px 8px rgba(40, 33, 20, 0.06), 0 16px 32px rgba(40, 33, 20, 0.10);
+
+  /* --- 角の丸み --- */
+  --r-sm: 9px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-pill: 999px;
+
+  /* --- 文字の種類 --- */
+  --font-display: 'Shippori Mincho', serif; /* 見出し専用の明朝体 */
+  --font-body: 'Zen Kaku Gothic New', system-ui, -apple-system, "Hiragino Sans", sans-serif;
+
+  /* --- 本文を中央に収める幅 --- */
+  --content-width: 520px;
+  --edge-padding: max(18px, calc((100% - var(--content-width)) / 2 + 18px));
+
+  /*
+    カテゴリーごとの色。ホーム・正答率・ブックマークの3画面で同じ色を使うので、
+    「紫はがん」「赤は高血圧」と、色でカテゴリーを覚えられるようにしてある
+  */
+  --cat-cancer: #7B62A8;          /* 藤紫 */
+  --cat-hypertension: #C1544C;    /* 紅 */
+  --cat-diabetes: #B8821F;        /* 山吹 */
+  --cat-heart-disease: #C05780;   /* 桃 */
+  --cat-cerebrovascular: #3C6BB0; /* 群青 */
+  --cat-psychiatric: #2B7FA8;     /* 縹(はなだ) */
+  --cat-immune-allergy: #5A8F3C;  /* 若草 */
+  --cat-infection: #1F8A70;       /* 常磐緑 */
+  --cat-calculation: #4A5A7B;     /* 鉄紺 */
+  --cat-ethics: #96613F;          /* 落栗(茶) */
+  --cat-national-exam: #96344B;   /* 臙脂(えんじ)。疾患ではなく試験対策なので、赤系の中でも濃い色にした */
+  --cat-prescription-query: #6B2E5F; /* 葡萄(えびぞめ)。処方監査の訓練という別枠なので、濃い赤紫にした */
+  --cat-default: var(--green-500); /* 万一カテゴリーが増えたときの予備 */
+
+  /* 難易度ごとの色。やさしい順に、緑 → 青 → 紫と濃くなっていく */
+  --lv-beginner: #1B7C64;
+  --lv-intermediate: #2F6BA8;
+  --lv-advanced: #6B4E9B;
+}
+
+/*
+  端末を「ダークモード」にしている人向けの色。
+  上で決めた色の名前はそのままに、中身だけ暗い配色に差し替える。
+  こうすると、以下のスタイルは一切書き直さなくてよい
+*/
+@media (prefers-color-scheme: dark) {
+  :root {
+    --indigo-900: #0B1424;
+    --indigo-700: #16233D;
+    --indigo-500: #23375C;
+    --green-500: #3FA98B;
+    --green-600: #55BB9C;
+    --green-100: #16302A;
+    --vermillion: #E0776B;
+    --vermillion-100: #33201D;
+    /* 暗いモードでは緑・朱色が明るくなるため、その上の文字は濃い色にする */
+    --on-green: #0C2A22;
+    --on-vermillion: #33130F;
+
+    --bg: #15171C;
+    --bg-tint: #23262E;
+    --surface: #1D2027;
+    --ink: #ECE7DD;
+    --ink-soft: #A9A296;
+    --ink-faint: #7C7568;
+    --line: #2E323B;
+    --line-strong: #3D424D;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.3), 0 6px 16px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.3), 0 16px 32px rgba(0, 0, 0, 0.45);
+
+    /* カテゴリー色は、暗い背景でも見えるよう明るめに振り直す */
+    --cat-cancer: #A991D8;
+    --cat-hypertension: #E9857D;
+    --cat-diabetes: #DDAB4B;
+    --cat-heart-disease: #E58AAD;
+    --cat-cerebrovascular: #7BA3E0;
+    --cat-psychiatric: #62B4D8;
+    --cat-immune-allergy: #8FC26F;
+    --cat-infection: #4FBFA3;
+    --cat-calculation: #8C9BBD;
+    --cat-ethics: #C89370;
+    --cat-national-exam: #E08D9F;
+    --cat-prescription-query: #C88BB8;
+
+    --lv-beginner: #3FA98B;
+    --lv-intermediate: #6C9FDC;
+    --lv-advanced: #A88BD6;
+  }
+}
+
+* { box-sizing: border-box; }
+
+/* キーボードで操作している人に、今どこを選んでいるかを枠線で示す。
+   :focus-visible を使うことで、指やマウスで触ったときには枠線が出ない */
+:focus-visible {
+  outline: 3px solid var(--green-500);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: var(--font-body);
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.7;
+  /* 紙の質感を出すための、ごく薄い斑点。うるさくならない濃さに抑えてある */
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(140, 120, 80, 0.05) 0, transparent 42%),
+    radial-gradient(circle at 88% 72%, rgba(60, 100, 90, 0.05) 0, transparent 46%);
+  background-attachment: fixed;
+}
+
+/* ===========================================================================
+   ヘッダー(アプリ名の帯)
+   =========================================================================== */
+.app-header {
+  position: relative;
+  overflow: hidden;
+  padding: 22px var(--edge-padding) 20px;
+  /* 単色ではなく、濃い藍から明るい藍へのグラデーションにして奥行きを出す */
+  background: linear-gradient(135deg, var(--indigo-900) 0%, var(--indigo-700) 55%, var(--indigo-500) 100%);
+  color: #F3EFE6;
+  /* iPhoneの画面上部の切り欠き(ノッチ)にかからないようにする */
+  padding-top: calc(22px + env(safe-area-inset-top));
+}
+/* ヘッダーの右側に、うっすら大きな丸を置いて単調さをなくす(ただの飾り) */
+.app-header::after {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -40px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(159, 216, 196, 0.16) 0%, transparent 70%);
+  pointer-events: none;
+}
+.app-header h1 {
+  position: relative;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.32rem;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+}
+/* アプリ名の上に細い緑の線を1本引いて、表紙のような佇まいにする */
+.app-header h1::before {
+  content: '';
+  display: block;
+  width: 34px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #9FD8C4, rgba(159, 216, 196, 0.15));
+  margin-bottom: 9px;
+}
+/* 利用者名と連続学習日数を、ヘッダーの下段に横並びにする */
+.header-meta {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* 今この端末を使っている人の名前。押すと利用者の切り替え画面へ進む。
+   誰の記録になるかを取り違えないよう、常に見える場所に置いている */
+.profile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 5px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(243, 239, 230, 0.35);
+  background: rgba(243, 239, 230, 0.12);
+  color: #F3EFE6;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background-color 0.16s ease, border-color 0.16s ease;
+}
+/* 人の形をした小さな印。名前だけだと何の札か分かりにくいため */
+.profile-chip::before {
+  content: '';
+  width: 13px;
+  height: 13px;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10m0 2c-4.4 0-8 2.4-8 5.4V22h16v-2.6c0-3-3.6-5.4-8-5.4'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10m0 2c-4.4 0-8 2.4-8 5.4V22h16v-2.6c0-3-3.6-5.4-8-5.4'/%3E%3C/svg%3E");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+.profile-chip::after { content: '⌄'; font-size: 0.8rem; line-height: 1; opacity: 0.75; }
+.profile-chip:hover { background: rgba(243, 239, 230, 0.2); border-color: rgba(243, 239, 230, 0.5); }
+
+/* 連続学習日数。丸い札(バッジ)にして目に留まるようにする */
+.streak-display {
+  position: relative;
+  display: inline-block;
+  margin: 0;
+  padding: 3px 12px 4px;
+  border-radius: var(--r-pill);
+  background: rgba(159, 216, 196, 0.14);
+  border: 1px solid rgba(159, 216, 196, 0.3);
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: #B7E4D3;
+  letter-spacing: 0.02em;
+}
+.streak-display:empty { display: none; } /* 文字がないときは札ごと隠す */
+
+/* ===========================================================================
+   画面切り替えのタブ
+   スマホでは画面の下に固定(アプリらしい操作感)、パソコンでは上に置く
+   =========================================================================== */
+.app-nav {
+  display: flex;
+  gap: 4px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(12px); /* 下の内容がうっすら透けて見えるすりガラス */
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line);
+  padding: 6px var(--edge-padding) calc(6px + env(safe-area-inset-bottom));
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+}
+.app-nav button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 2px 6px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--ink-faint);
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color 0.16s ease, background-color 0.16s ease;
+}
+/* タブの絵(アイコン)。SVGを「型抜き」として使い、色は文字色に合わせて変える。
+   こうしておくと、選択中だけ色を変える指定が1行で済む */
+.app-nav button::before {
+  content: '';
+  width: 21px;
+  height: 21px;
+  background-color: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+.app-nav button[data-screen="home-screen"]::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 3.1 2.4 11.3l1.3 1.5L5 11.7V21h5.2v-5.6h3.6V21H19v-9.3l1.3 1.1 1.3-1.5z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 3.1 2.4 11.3l1.3 1.5L5 11.7V21h5.2v-5.6h3.6V21H19v-9.3l1.3 1.1 1.3-1.5z'/%3E%3C/svg%3E");
+}
+.app-nav button[data-screen="quiz-screen"]::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6m4.4 4.7-5.9 5.9-2.9-2.9-1.6 1.6 4.5 4.5 7.5-7.5z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6m4.4 4.7-5.9 5.9-2.9-2.9-1.6 1.6 4.5 4.5 7.5-7.5z'/%3E%3C/svg%3E");
+}
+.app-nav button[data-screen="stats-screen"]::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M3.6 20.4h3.2V11H3.6zm6.8 0h3.2V3.6h-3.2zm6.8 0h3.2v-7.6h-3.2z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M3.6 20.4h3.2V11H3.6zm6.8 0h3.2V3.6h-3.2zm6.8 0h3.2v-7.6h-3.2z'/%3E%3C/svg%3E");
+}
+.app-nav button[data-screen="bookmark-screen"]::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='m12 2.8 2.85 6.02 6.35.68-4.75 4.4 1.35 6.3L12 17.05 6.2 20.2l1.35-6.3L2.8 9.5l6.35-.68z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='m12 2.8 2.85 6.02 6.35.68-4.75 4.4 1.35 6.3L12 17.05 6.2 20.2l1.35-6.3L2.8 9.5l6.35-.68z'/%3E%3C/svg%3E");
+}
+/* 今いる画面のタブ。色を濃くし、うっすら緑の座布団を敷いて現在地を示す */
+.app-nav button.active {
+  color: var(--green-600);
+  font-weight: 700;
+  background: color-mix(in srgb, var(--green-500) 10%, transparent);
+}
+
+/* パソコンなど広い画面では、タブを下ではなくヘッダーのすぐ下に置く */
+@media (min-width: 700px) {
+  .app-nav {
+    position: sticky;
+    top: 0;
+    bottom: auto;
+    border-top: none;
+    border-bottom: 1px solid var(--line);
+    padding: 8px var(--edge-padding);
+  }
+  .app-nav button { flex-direction: row; gap: 7px; font-size: 0.8rem; padding: 8px 4px; }
+  .app-nav button::before { width: 17px; height: 17px; }
+}
+
+/* ===========================================================================
+   本文の共通レイアウト
+   =========================================================================== */
+main {
+  padding: 20px 18px;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  /* 画面下に固定したタブに隠れないよう、下にゆとりを取る */
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+@media (min-width: 700px) {
+  main { padding-bottom: 48px; }
+}
+
+main h2 {
+  font-family: var(--font-display);
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.03em;
+  margin: 0 0 16px;
+}
+
+.screen[hidden] { display: none; }
+/* 画面を切り替えたとき、下からふわっと現れる */
+.screen { animation: screen-in 0.28s ease-out; }
+@keyframes screen-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ===========================================================================
+   ホーム画面 … カテゴリーを2列のカードで並べる
+   =========================================================================== */
+#category-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 11px;
+}
+.category-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 3px;
+  min-height: 88px;
+  padding: 13px 13px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-body);
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: left;
+  line-height: 1.45;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+/* カードの左上に、そのカテゴリーの色の帯を入れる。
+   --cat という変数は JavaScript 側でカテゴリーごとに入れている */
+.category-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--cat, var(--cat-default));
+}
+/* カードの右上に、色を薄く敷いた丸。カテゴリーの色をもう少し面で見せるための飾り */
+.category-item::after {
+  content: '';
+  position: absolute;
+  top: -26px;
+  right: -26px;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: var(--cat, var(--cat-default));
+  opacity: 0.09;
+  pointer-events: none;
+}
+.category-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--cat, var(--cat-default)) 40%, var(--line));
+}
+.category-item:active { transform: translateY(0) scale(0.985); }
+/* 問題数の表示。カテゴリー名の下に小さく添える */
+.category-count {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+}
+
+/* 弱点復習ボタン。カテゴリーのカードとは違う見た目にして、特別な入口だと分かるようにする */
+#weak-point-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 15px;
+  margin-top: 18px;
+  border: none;
+  border-radius: var(--r-md);
+  background: linear-gradient(135deg, var(--green-600), var(--green-500));
+  color: var(--on-green);
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--green-500) 32%, transparent);
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
+}
+#weak-point-button::before { content: '⟳'; font-size: 1.05rem; line-height: 1; }
+#weak-point-button:hover { transform: translateY(-2px); box-shadow: 0 7px 20px color-mix(in srgb, var(--green-500) 38%, transparent); }
+#weak-point-button:active { transform: translateY(0) scale(0.99); }
+
+/* ===========================================================================
+   難易度を選ぶ画面
+   =========================================================================== */
+/* 「カテゴリー一覧に戻る」ボタン。控えめな文字リンクのような見た目にする */
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 0;
+  margin-bottom: 6px;
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.16s ease;
+}
+.back-button::before { content: '←'; font-size: 0.95rem; line-height: 1; }
+.back-button:hover { color: var(--green-600); }
+
+#difficulty-list { display: flex; flex-direction: column; gap: 11px; }
+
+/* 初級・中級・上級のカード。横長の1枚ずつにして、押す場所が大きくなるようにしている */
+.difficulty-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  width: 100%;
+  padding: 16px 18px 15px 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+/* カードの左端に、難易度の色の帯を入れる */
+.difficulty-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 100%;
+  background: var(--lv, var(--green-500));
+}
+.difficulty-item[data-difficulty="beginner"]     { --lv: var(--lv-beginner); }
+.difficulty-item[data-difficulty="intermediate"] { --lv: var(--lv-intermediate); }
+.difficulty-item[data-difficulty="advanced"]     { --lv: var(--lv-advanced); }
+
+.difficulty-item:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--lv) 45%, var(--line));
+}
+.difficulty-item:not(:disabled):active { transform: translateY(0) scale(0.99); }
+/* まだ問題が入っていない難易度。押せないことが見て分かるように薄くする */
+.difficulty-item:disabled { opacity: 0.5; cursor: default; }
+
+.difficulty-name {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--lv);
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+}
+.difficulty-desc {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+.difficulty-meta {
+  margin-top: 4px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* ===========================================================================
+   クイズ画面
+   =========================================================================== */
+/* 問題番号と判子を並べる帯。判子のぶんの高さをあらかじめ確保しておくことで、
+   判子が出ても下の問題文が押し下げられたり、文字に重なったりしない */
+.quiz-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 52px;
+  margin-bottom: 2px;
+}
+
+#quiz-progress {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+
+/* 何問目まで来たかを示す細い棒。文字より直感的に進み具合が分かる */
+.quiz-progress-track {
+  height: 5px;
+  border-radius: var(--r-pill);
+  background: var(--bg-tint);
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+.quiz-progress-fill {
+  height: 100%;
+  width: 0;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--green-600), var(--green-500));
+  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 問題文。1枚のカードに載せて、選択肢と役割が違うことを見た目で分ける。
+   見出しタグだが、長い症例文でも読みやすいよう本文用のゴシック体にする */
+#question-text {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.85;
+  margin: 0 0 16px;
+  padding: 17px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+}
+#question-text:empty { display: none; }
+
+/*
+  疑義照会の問題文。症例と処方せんを、書かれたとおりの改行・字下げで見せる。
+  処方は行の頭がそろっていないと読みにくいため、空白もそのまま残す(pre-wrap)
+*/
+#question-text.is-query {
+  white-space: pre-wrap;
+  font-size: 0.92rem;
+  line-height: 1.75;
+}
+/* 解説。疑義照会の問題では「問題点」「リスク」など見出しごとに改行するため、
+   書いたとおりの改行を残す */
+#feedback-explanation,
+.review-explanation { white-space: pre-line; }
+
+/* 疑義照会の2段階目(理由を選ぶ)の前に置く一行 */
+.query-step2-heading {
+  margin: 16px 0 4px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
+}
+/* 2段階目の選択肢の入れ物。
+   ここで番号を0に戻すので、1段階目(A・B)の続きではなくAから数え直される */
+.query-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  counter-reset: choice;
+}
+
+/* --- 選択肢 --- */
+#choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  counter-reset: choice; /* A・B・C・D と自動で番号を振るための準備 */
+}
+#choice-list button {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  width: 100%;
+  text-align: left;
+  padding: 13px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-body);
+  font-size: 0.93rem;
+  line-height: 1.65;
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+/* 選択肢の頭につく A/B/C/D の丸い札。CSSが自動で数えて振ってくれる */
+#choice-list button::before {
+  counter-increment: choice;
+  content: counter(choice, upper-alpha);
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--bg-tint);
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+#choice-list button:not(:disabled):hover {
+  border-color: var(--green-500);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+#choice-list button:not(:disabled):hover::before {
+  background: color-mix(in srgb, var(--green-500) 15%, transparent);
+  color: var(--green-600);
+}
+#choice-list button:not(:disabled):active { transform: scale(0.99); }
+#choice-list button:disabled { opacity: 1; cursor: default; } /* 解答後も文字が薄くならないようにする */
+
+/* 正解の選択肢には緑、選んだ不正解には朱色をつけて、答え合わせをひと目で分かるようにする */
+#choice-list button.correct {
+  border-color: var(--green-500);
+  background: var(--green-100);
+}
+#choice-list button.correct::before { background: var(--green-500); color: var(--on-green); content: '✓'; font-size: 0.85rem; }
+#choice-list button.incorrect {
+  border-color: var(--vermillion);
+  background: var(--vermillion-100);
+}
+#choice-list button.incorrect::before { background: var(--vermillion); color: var(--on-vermillion); content: '✕'; font-size: 0.8rem; }
+
+/* --- 答え合わせの解説パネル --- */
+#answer-feedback {
+  margin-top: 16px;
+  padding: 16px 17px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-md);
+  animation: feedback-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes feedback-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+/* 「正解!」「不正解」の見出し。左に色の丸を置いて、結果が一瞬で分かるようにする */
+#feedback-result {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.02rem;
+  letter-spacing: 0.04em;
+  margin: 0 0 9px;
+  color: var(--green-600);
+}
+#feedback-result::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+}
+/* 不正解のときだけ朱色にする。JavaScript側の文字だけで見分けられるようにしている */
+#feedback-result:has(+ #feedback-explanation) { /* 位置合わせのためのダミー指定 */ }
+#answer-feedback.is-wrong #feedback-result { color: var(--vermillion); }
+
+#feedback-explanation {
+  font-size: 0.88rem;
+  color: var(--ink);
+  line-height: 1.85;
+  margin: 0 0 12px;
+}
+#feedback-source {
+  font-size: 0.74rem;
+  color: var(--ink-faint);
+  line-height: 1.6;
+  margin: 0;
+  padding-top: 11px;
+  border-top: 1px dashed var(--line-strong);
+  word-break: break-all; /* 長いURLでも画面からはみ出さないようにする */
+}
+#feedback-source a { color: var(--green-600); }
+
+/* 解説パネルの下のボタン2つ */
+#bookmark-toggle-button,
+#next-question-button {
+  padding: 11px 16px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-top: 14px;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+#bookmark-toggle-button {
+  border: 1.5px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink-soft);
+  margin-right: 8px;
+}
+#bookmark-toggle-button:hover { border-color: var(--green-500); color: var(--green-600); }
+#next-question-button {
+  border: none;
+  background: linear-gradient(135deg, var(--green-600), var(--green-500));
+  color: var(--on-green);
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--green-500) 30%, transparent);
+}
+#next-question-button:hover { transform: translateY(-1px); box-shadow: 0 6px 18px color-mix(in srgb, var(--green-500) 36%, transparent); }
+#next-question-button:active { transform: translateY(0) scale(0.98); }
+
+/* --- 正解したときだけ現れる「判子」の演出 --- */
+.hanko {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2.5px solid var(--vermillion);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-9deg);
+  opacity: 0.9;
+  pointer-events: none; /* 判子はただの飾りなので、タップ操作の邪魔をしないようにする */
+  animation: hanko-press 0.28s ease-out; /* 押した瞬間の手応えを出す */
+}
+.hanko span {
+  font-family: var(--font-display);
+  font-size: 27px;
+  font-weight: 700;
+  color: var(--vermillion);
+}
+/* 判子が上から降りてきて「ポン」と押される動き。
+   拡大率を上げすぎると、動いている一瞬だけ画面の右端からはみ出すため1.35倍までに抑える */
+@keyframes hanko-press {
+  from { transform: rotate(-9deg) scale(1.35); opacity: 0; }
+  to   { transform: rotate(-9deg) scale(1);    opacity: 0.9; }
+}
+
+/* ===========================================================================
+   結果画面 … 成績を大きな円グラフで見せる
+   =========================================================================== */
+/* 成績のまとめを載せる1枚のカード。上端に緑の帯を入れて「表彰状」のような佇まいにする */
+.result-card {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  padding: 22px 20px 24px;
+  margin-bottom: 26px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md);
+}
+.result-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, var(--green-600), var(--green-500), var(--lv-intermediate));
+}
+.result-card h2 { text-align: center; margin: 0 0 4px; }
+
+/* カードの一番上に出す「がん ・ 初級」などの小見出し */
+.result-eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--green-600);
+}
+.result-eyebrow:empty { display: none; }
+
+/* 正解数・不正解数の札を横に並べる */
+.result-chips {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  margin: 12px 0 14px;
+}
+.result-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: var(--r-pill);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+.result-chip b { font-size: 0.95rem; font-weight: 700; }
+.result-chip.is-correct { background: var(--green-100); color: var(--green-600); }
+.result-chip.is-wrong { background: var(--vermillion-100); color: var(--vermillion); }
+
+/* ふりかえり一覧などの小見出し */
+.section-title {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.05em;
+  margin: 0 0 12px;
+}
+
+/* --- 今回の問題をふりかえる一覧 --- */
+#result-review-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 26px; }
+
+/* <details> タグ。閉じているときは問題文だけ、開くと解説が出る */
+.review-item {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--lv, var(--green-500));
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.review-item[data-result="correct"] { --lv: var(--green-500); }
+.review-item[data-result="wrong"] { --lv: var(--vermillion); }
+
+.review-item summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none; /* ブラウザが自動でつける三角の印を消す */
+  font-size: 0.85rem;
+  line-height: 1.65;
+}
+.review-item summary::-webkit-details-marker { display: none; }
+/* 右端に開閉の向きを示す小さな矢印を置く */
+.review-item summary::after {
+  content: '⌄';
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+  line-height: 1.2;
+  transition: transform 0.18s ease;
+}
+.review-item[open] summary::after { transform: rotate(180deg); }
+
+/* ○ か × の丸い印 */
+.review-badge {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--on-green);
+  background: var(--lv);
+}
+.review-item[data-result="wrong"] .review-badge { color: var(--on-vermillion); }
+
+/* 閉じているときは問題文を2行までにして、一覧が縦に伸びすぎないようにする */
+.review-question {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.review-item[open] .review-question { -webkit-line-clamp: unset; }
+
+.review-body {
+  padding: 0 14px 14px 46px;
+  border-top: 1px dashed var(--line-strong);
+  margin-top: 2px;
+  padding-top: 12px;
+}
+.review-answer { margin: 0 0 8px; font-size: 0.83rem; color: var(--ink); }
+.review-answer b { color: var(--green-600); }
+.review-explanation { margin: 0 0 8px; font-size: 0.82rem; line-height: 1.8; color: var(--ink-soft); }
+.review-source { margin: 0; font-size: 0.71rem; color: var(--ink-faint); line-height: 1.55; }
+
+.result-actions { display: flex; flex-direction: column; }
+
+/* 正答率を表す円。--pct(0〜100)の値だけ緑に塗る仕組み */
+.score-ring {
+  position: relative; /* 内側をくり抜く白い丸(::after)を、この円の中に重ねるため */
+  width: 152px;
+  height: 152px;
+  margin: 6px auto 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    conic-gradient(var(--green-500) calc(var(--pct, 0) * 1%), var(--bg-tint) 0);
+  transition: background 0.6s ease;
+}
+/* 円の内側をくり抜いて、ドーナツ状に見せるための白い丸 */
+.score-ring::after {
+  content: '';
+  position: absolute;
+  width: 122px;
+  height: 122px;
+  border-radius: 50%;
+  background: var(--bg);
+}
+.score-ring-inner {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--green-600);
+  line-height: 1;
+}
+.score-ring-pct { font-size: 2.5rem; }
+.score-ring-unit { font-size: 1rem; margin-left: 1px; }
+
+#result-score {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+#result-score .result-count {
+  color: var(--green-600);
+  font-size: 1.7rem;
+  margin: 0 2px;
+}
+#result-comment {
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+  line-height: 1.8;
+  margin: 0 auto 24px;
+  max-width: 22em;
+}
+#retry-button,
+#other-difficulty-button,
+#back-home-button {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  margin-bottom: 9px;
+  border-radius: var(--r-md);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.16s ease;
+}
+#retry-button {
+  border: none;
+  background: linear-gradient(135deg, var(--green-600), var(--green-500));
+  color: var(--on-green);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--green-500) 30%, transparent);
+}
+#retry-button:hover { transform: translateY(-2px); }
+#other-difficulty-button,
+#back-home-button {
+  border: 1.5px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+#other-difficulty-button:hover,
+#back-home-button:hover { border-color: var(--ink-faint); color: var(--ink); }
+/* 弱点復習モードのときは「別の難易度を選ぶ」に意味がないので、JavaScript側で隠す */
+#other-difficulty-button[hidden] { display: none; }
+
+/* ===========================================================================
+   正答率画面 … カテゴリーごとの棒グラフ
+   =========================================================================== */
+#stats-list { display: flex; flex-direction: column; gap: 9px; }
+.stats-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-sm);
+}
+/* 行の左端に、そのカテゴリーの色の細い縦線を入れる(ホーム画面と同じ色) */
+.stats-row::before {
+  content: '';
+  width: 3px;
+  align-self: stretch;
+  border-radius: 2px;
+  background: var(--cat, var(--cat-default));
+  flex-shrink: 0;
+}
+.stats-name { width: 6.4em; flex-shrink: 0; font-size: 0.83rem; font-weight: 500; line-height: 1.4; }
+.bar-track {
+  flex: 1;
+  background: var(--bg-tint);
+  height: 8px;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.bar-fill {
+  background: var(--cat, var(--cat-default));
+  height: 100%;
+  border-radius: var(--r-pill);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.stats-pct {
+  width: 3.6em;
+  text-align: right;
+  font-variant-numeric: tabular-nums; /* 数字の幅を揃えて、桁がずれて見えないようにする */
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+/* まだ1問も解いていないカテゴリー。「0%(全問不正解)」と見分けがつくよう、
+   数字ではなく「未回答」と薄い文字で表示する */
+.stats-pct.unanswered {
+  color: var(--ink-faint);
+  font-weight: 400;
+  font-size: 0.7rem;
+}
+
+/* ===========================================================================
+   ブックマーク画面
+   =========================================================================== */
+#bookmark-list { display: flex; flex-direction: column; gap: 10px; }
+.bookmark-row {
+  padding: 13px 15px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--cat, var(--cat-default));
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-sm);
+}
+.bookmark-tag {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--cat, var(--cat-default));
+  background: color-mix(in srgb, var(--cat, var(--cat-default)) 11%, transparent);
+  border-radius: var(--r-pill);
+  padding: 2px 9px;
+  margin-bottom: 7px;
+}
+.bookmark-text { font-size: 0.87rem; line-height: 1.7; }
+
+/* 「まだブックマークがありません」など、中身が空のときの案内文 */
+#bookmark-list:not(:has(.bookmark-row)) {
+  color: var(--ink-faint);
+  font-size: 0.86rem;
+  padding: 26px 0;
+  text-align: center;
+}
+
+/* ===========================================================================
+   利用者(プロフィール)の切り替え画面
+   =========================================================================== */
+/* 画面の使い方を説明する、小さな案内文 */
+.screen-note {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  line-height: 1.7;
+  margin: 0 0 14px;
+}
+
+#profile-list { display: flex; flex-direction: column; gap: 9px; margin-bottom: 14px; }
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.16s ease;
+}
+/* 今使っている人の行。緑の枠と、名前の左のチェック印で示す */
+.profile-row.is-current {
+  border-color: var(--green-500);
+  background: color-mix(in srgb, var(--green-500) 6%, var(--surface));
+}
+
+/* 名前の部分。ここを押すとその人に切り替わるので、押せる範囲を広く取る */
+.profile-switch {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 8px;
+  border: none;
+  background: none;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+/* 名前の前に置く丸。使用中の人だけ緑に塗り、チェックを入れる */
+.profile-switch::before {
+  content: '';
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+}
+.profile-row.is-current .profile-switch::before {
+  content: '✓';
+  border-color: var(--green-500);
+  background: var(--green-500);
+  color: var(--on-green);
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.profile-action {
+  padding: 6px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease;
+}
+.profile-action:hover { border-color: var(--ink-faint); color: var(--ink); }
+/* 削除ボタンだけは、押し間違えないよう朱色にしておく */
+.profile-action.is-danger { color: var(--vermillion); border-color: color-mix(in srgb, var(--vermillion) 40%, var(--line-strong)); }
+.profile-action.is-danger:hover { border-color: var(--vermillion); background: var(--vermillion-100); }
+
+/* 「利用者を追加」「成績を書き出す」などの、控えめなボタン */
+.secondary-button {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 1.5px dashed var(--line-strong);
+  border-radius: var(--r-md);
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease, background-color 0.16s ease;
+}
+.secondary-button:hover {
+  border-color: var(--green-500);
+  color: var(--green-600);
+  background: color-mix(in srgb, var(--green-500) 6%, transparent);
+}
+
+/* 書き出した成績を表示する枠。等幅の文字にして、桁が揃って読めるようにする */
+.export-output {
+  margin: 12px 0;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-sm);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+  line-height: 1.75;
+  color: var(--ink);
+  white-space: pre-wrap; /* 長い行は折り返す */
+  overflow-x: auto;
+  user-select: text;     /* 手で選んでコピーできるようにする */
+}
+.export-message {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  color: var(--green-600);
+  min-height: 1.2em;
+}
+
+/* ---------------------------------------------------------------------------
+   先生用「みんなの成績」画面
+
+   実習生が普段使う画面ではないので、ボタンは目立たせず、
+   表は数字が読み取りやすいことだけを優先している。
+   --------------------------------------------------------------------------- */
+
+/* 枠線も背景もない、控えめなボタン。先生用の入口に使う */
+.text-button {
+  display: block;
+  width: 100%;
+  margin: 26px 0 0;
+  padding: 10px;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  text-align: center;
+  cursor: pointer;
+}
+.text-button:hover { color: var(--ink); }
+
+/* 共有の段階を選ぶボタン。難易度の選択と同じ見た目に揃えてある */
+.share-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 14px 0 0;
+}
+.share-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  margin: 0;
+  padding: 13px 15px;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+.share-item[data-level="none"] { border-left-color: var(--ink-faint); }
+.share-item[data-level="summary"] { border-left-color: var(--lv-intermediate); }
+.share-item[data-level="full"] { border-left-color: var(--green-500); }
+
+/* 今選ばれているものを、はっきり分かるようにする */
+.share-item.is-selected {
+  background: color-mix(in srgb, var(--green-500) 8%, var(--surface));
+  border-color: var(--green-500);
+}
+.share-item.is-selected .share-name::after {
+  content: ' ✓';
+  color: var(--green-600);
+}
+.share-name { font-size: 0.92rem; font-weight: 700; }
+.share-desc { font-size: 0.75rem; color: var(--ink-soft); line-height: 1.6; }
+
+/* 実習生の画面に出す、送信の状況を伝える一行 */
+.report-status {
+  margin: 10px 0 0;
+  padding: 9px 12px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--green-500) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--green-500) 22%, transparent);
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+}
+
+/* 先生の画面:合言葉の入力と読み込みボタンを横に並べる */
+.report-key-row {
+  display: flex;
+  gap: 10px;
+  margin: 12px 0;
+}
+.report-key {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 13px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+}
+.report-key:focus {
+  outline: none;
+  border-color: var(--green-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green-500) 18%, transparent);
+}
+.report-key-row button { margin: 0; white-space: nowrap; }
+
+/* 通信がうまくいかないときの逃げ道。普段は畳んでおく */
+.report-fallback {
+  margin-top: 30px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.report-fallback summary {
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+.report-fallback summary:hover { color: var(--ink-soft); }
+
+/* 貼り付け用の入力欄 */
+.report-input {
+  display: block;
+  width: 100%;
+  margin: 12px 0;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+  line-height: 1.7;
+  resize: vertical;
+}
+.report-input:focus {
+  outline: none;
+  border-color: var(--green-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green-500) 18%, transparent);
+}
+
+.report-actions {
+  display: flex;
+  gap: 10px;
+}
+.report-actions button { flex: 1; margin: 0; }
+
+.report-block { margin-top: 30px; }
+
+/* 表。実習生が増えると横に伸びるので、はみ出したら表だけ横スクロールさせる */
+.report-table-wrap {
+  margin-top: 10px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.report-table th,
+.report-table td {
+  padding: 9px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.report-table thead th {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.report-table tbody th {
+  font-weight: 600;
+  color: var(--ink);
+}
+.report-table tbody td { color: var(--ink-soft); }
+.report-table tr:last-child th,
+.report-table tr:last-child td { border-bottom: none; }
+
+/* 間違えた問題の一覧 */
+.report-wrong-list {
+  margin: 10px 0 0;
+  padding-left: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.report-wrong-list li {
+  padding-left: 4px;
+  font-size: 0.82rem;
+}
+.report-wrong-tag {
+  display: inline-block;
+  margin-bottom: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+}
+.report-wrong-question {
+  margin: 0 0 3px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.report-wrong-answer {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.6;
+  color: var(--green-600);
+}
+
+/* ===========================================================================
+   パソコンの広い画面向けのレイアウト
+
+   スマホ向けの「細い1本の列」をそのまま大画面に出すと、左右が大きく空いて
+   間延びして見える。かといって本文の幅をそのまま広げると、1行が長くなりすぎて
+   読みにくくなる(日本語は1行30〜40字くらいが読みやすい)。
+
+   そこで、
+    - タブを画面左の縦一列(サイドバー)に移して横幅を使う
+    - カードが並ぶ画面(ホーム・ブックマーク)は列を増やして横に広げる
+    - 文章を読む画面(クイズ・結果など)は、幅を抑えたまま中央に置く
+   というように、内容の種類ごとに幅を変えている。
+   =========================================================================== */
+@media (min-width: 1000px) {
+  /*
+    画面全体を「ヘッダー(上に全幅)」「タブ(左)」「本文(右)」の3つに区切る。
+    ページ全体はスクロールさせず、本文の欄だけをスクロールさせることで、
+    ヘッダーとタブが常に見えるアプリらしい画面にする
+  */
+  body {
+    display: grid;
+    grid-template-columns: 236px 1fr;
+    grid-template-rows: auto 1fr;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .app-header {
+    grid-column: 1 / -1; /* ヘッダーは左右いっぱいに広げる */
+    padding: 22px 36px 20px;
+  }
+
+  /* タブを左側の縦一列にする */
+  .app-nav {
+    grid-column: 1;
+    grid-row: 2;
+    position: static;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 4px;
+    padding: 20px 14px;
+    border: none;
+    border-right: 1px solid var(--line);
+    background: color-mix(in srgb, var(--surface) 55%, transparent);
+    overflow-y: auto;
+  }
+  .app-nav button {
+    flex: 0 0 auto; /* 縦並びなので、余った高さに引き伸ばさない */
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 11px;
+    padding: 11px 14px;
+    font-size: 0.85rem;
+    border-radius: var(--r-md);
+  }
+  .app-nav button::before { width: 19px; height: 19px; }
+
+  /* 本文の欄。ここだけがスクロールする */
+  main {
+    grid-column: 2;
+    grid-row: 2;
+    overflow-y: auto;
+    max-width: none;
+    margin: 0;
+    padding: 30px 40px 56px;
+  }
+
+  /* カードが並ぶ画面は、横幅をたっぷり使う */
+  .screen { max-width: 1120px; margin: 0 auto; }
+  /* 文章を読む画面は、1行が長くなりすぎないように幅を抑える */
+  #quiz-screen,
+  #difficulty-screen,
+  #result-screen,
+  #profile-screen,
+  #share-ask-screen { max-width: 660px; }
+
+  /* ホームのカテゴリーは3列に */
+  #category-list { grid-template-columns: repeat(3, 1fr); }
+  /* ブックマークは2列に */
+  #bookmark-list { display: grid; grid-template-columns: repeat(2, 1fr); align-items: start; }
+}
+
+/* さらに広い画面では、カテゴリーを4列にして余白を減らす */
+@media (min-width: 1400px) {
+  #category-list { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ===========================================================================
+   端末側で「動きを減らす」設定にしている人には、アニメーションを出さない
+   =========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

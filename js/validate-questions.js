@@ -1,0 +1,113 @@
+// 1問分のデータが、正しい形になっているかチェックする関数です。
+// 問題データを追加・修正したときに、うっかりミス(必須項目の書き忘れなど)に
+// 気づけるようにするためのものです。
+
+const VALID_DIFFICULTIES = ['beginner', 'intermediate', 'advanced'];
+// 出題の形式。
+//  single … 選択肢から1つ選ぶ、ふつうの問題
+//  case   … 症例を読んで1つ選ぶ問題
+//  query  … 疑義照会の問題。まず「必要か不要か」を選び、
+//           必要と答えた場合だけ、その理由を選ぶ2段階の形式
+const VALID_TYPES = ['single', 'case', 'query'];
+
+// 出題カテゴリーの正式な名前(id)の一覧。
+// data/categories.json と同じ内容にしておく必要があり、
+// ずれていないかはテストで見張っている。
+// カテゴリー名を打ち間違えると、その問題はホーム画面からも正答率画面からも
+// 消えてしまい、しかもエラーも出ないため、ここで必ず照合する。
+export const VALID_CATEGORY_IDS = [
+  'cancer',
+  'hypertension',
+  'diabetes',
+  'heart-disease',
+  'cerebrovascular',
+  'psychiatric',
+  'immune-allergy',
+  'infection',
+  'calculation',
+  'ethics',
+  'national-exam',
+  'prescription-query',
+];
+
+export function validateQuestion(q) {
+  const errors = [];
+
+  // idの検証
+  if (typeof q.id !== 'string' || q.id.length === 0) {
+    errors.push('id が文字列で入っていません');
+  }
+  // categoryの検証。決められた10個のどれかであること
+  if (!VALID_CATEGORY_IDS.includes(q.category)) {
+    errors.push(`category が正しくありません(${VALID_CATEGORY_IDS.join(' / ')} のいずれか)`);
+  }
+  // difficultyの検証
+  if (!VALID_DIFFICULTIES.includes(q.difficulty)) {
+    errors.push(`difficulty は ${VALID_DIFFICULTIES.join(' / ')} のいずれかである必要があります`);
+  }
+  // typeの検証
+  if (!VALID_TYPES.includes(q.type)) {
+    errors.push(`type は ${VALID_TYPES.join(' / ')} のいずれかである必要があります`);
+  }
+  // questionの検証
+  if (typeof q.question !== 'string' || q.question.length === 0) {
+    errors.push('question が文字列で入っていません');
+  }
+  // choicesの検証
+  if (!Array.isArray(q.choices) || q.choices.length < 2) {
+    errors.push('choices は2つ以上の配列である必要があります');
+  }
+  // correctIndexの検証
+  if (
+    !Number.isInteger(q.correctIndex) ||
+    !Array.isArray(q.choices) ||
+    q.correctIndex < 0 ||
+    q.correctIndex >= q.choices.length
+  ) {
+    errors.push('correctIndex が choices の範囲内の数字ではありません');
+  }
+  // explanationの検証
+  if (typeof q.explanation !== 'string' || q.explanation.length === 0) {
+    errors.push('explanation が文字列で入っていません');
+  }
+  // source.nameの検証
+  if (!q.source || typeof q.source.name !== 'string' || q.source.name.length === 0) {
+    errors.push('source.name が入っていません');
+  }
+  // source.confirmedDateの検証
+  if (!q.source || typeof q.source.confirmedDate !== 'string') {
+    errors.push('source.confirmedDate が入っていません');
+  }
+  // 疑義照会の問題だけに必要な項目。
+  // 「この処方に疑義照会が必要かどうか」を true / false で持つ。
+  // 書き忘れると、正解の判定ができなくなってしまうため必ず確認する
+  if (q.type === 'query' && typeof q.needsQuery !== 'boolean') {
+    errors.push('type が query の問題には needsQuery が true / false で必要です');
+  }
+  // verifiedの検証。PMDAの一次資料で内容を確認済みかどうかを表す
+  if (typeof q.verified !== 'boolean') {
+    errors.push('verified が true / false で入っていません');
+  }
+
+  return errors;
+}
+
+export function validateQuestions(questions) {
+  const results = [];
+  // 同じIDの問題が2つあると、解答履歴が混ざってしまうので見張る
+  const seenIds = new Set();
+
+  for (const q of questions) {
+    const errors = validateQuestion(q);
+    if (seenIds.has(q.id)) {
+      errors.push(`id「${q.id}」が重複しています`);
+    } else {
+      seenIds.add(q.id);
+    }
+    // エラーがある問題だけを結果配列に加える
+    if (errors.length > 0) {
+      results.push({ id: q.id, errors });
+    }
+  }
+  return results;
+}
