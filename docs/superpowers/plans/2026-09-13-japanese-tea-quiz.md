@@ -144,7 +144,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 > 計画では Task 7/8 で手動コマンドとして数える予定だったが、自動テストの方が確実なので
 > 下のテストファイルに五肢択一版として引き継ぐ。手動コマンドは補助扱いにする。
 
-- [ ] **Step 1: 失敗するテストを書く**
+- [x] **Step 1: 失敗するテストを書く**
 
 `tests/validate-questions.test.js` を次の内容で**丸ごと置き換える**。
 
@@ -274,7 +274,7 @@ test('data/questions.json に形式エラーが1件もない', async () => {
 });
 ```
 
-- [ ] **Step 2: テストを実行して失敗することを確認する**
+- [x] **Step 2: テストを実行して失敗することを確認する**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -283,7 +283,7 @@ node --test tests/validate-questions.test.js
 
 期待: FAIL。`REQUIRED_CHOICE_COUNT` が export されていないこと、`data/categories.json` が無いことでこける。
 
-- [ ] **Step 3: data/categories.json を作る**
+- [x] **Step 3: data/categories.json を作る**
 
 ```json
 [
@@ -300,13 +300,13 @@ node --test tests/validate-questions.test.js
 ]
 ```
 
-- [ ] **Step 4: data/questions.json を空の配列で作る**
+- [x] **Step 4: data/questions.json を空の配列で作る**
 
 ```json
 []
 ```
 
-- [ ] **Step 5: js/validate-questions.js を丸ごと置き換える**
+- [x] **Step 5: js/validate-questions.js を丸ごと置き換える**
 
 ```javascript
 // 1問分のデータが正しい形になっているかを調べる部品です。
@@ -438,7 +438,7 @@ export function validateQuestions(questions) {
 }
 ```
 
-- [ ] **Step 6: テストを実行して全部通ることを確認する**
+- [x] **Step 6: テストを実行して全部通ることを確認する**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -447,7 +447,7 @@ node --test tests/validate-questions.test.js
 
 期待: PASS（14件すべて）。
 
-- [ ] **Step 7: コミット**
+- [x] **Step 7: コミット**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"

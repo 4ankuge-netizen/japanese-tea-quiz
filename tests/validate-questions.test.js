@@ -1,179 +1,262 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { validateQuestion, validateQuestions, VALID_CATEGORY_IDS } from '../js/validate-questions.js';
-import { readFileSync } from 'node:fs';
+// 問題データの形が正しいかを見張るテストです。
+// 問題を手で書き足したときのうっかりミス(選択肢が4つしかない、
+// 分野名の打ち間違い、IDの重複など)を、ここで自動的に見つけます。
 
-// 各テストで使う「正しい1問」のひな形。
-// 一部だけ書き換えて「この項目が不正だとエラーになるか」を確かめる
-function makeQuestion(overrides = {}) {
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import {
+  validateQuestion,
+  validateQuestions,
+  VALID_CATEGORY_IDS,
+  REQUIRED_CHOICE_COUNT,
+} from '../js/validate-questions.js';
+
+// テスト用に「正しい問題」を1つ作る関数。
+// 引数で一部だけ上書きできるようにしておくと、
+// 「選択肢だけ壊した問題」などを短く書ける
+function makeValidQuestion(overrides = {}) {
   return {
-    id: 'sample-001',
-    category: 'cancer',
-    difficulty: 'beginner',
-    type: 'single',
-    question: 'サンプル問題文',
-    choices: ['A', 'B', 'C', 'D'],
+    id: 'chemistry-001',
+    category: 'chemistry',
+    question: 'テスト用の問題文',
+    choices: ['選択肢あ', '選択肢い', '選択肢う', '選択肢え', '選択肢お'],
     correctIndex: 0,
-    explanation: 'サンプル解説',
-    source: { name: 'サンプル資料', url: '', confirmedDate: '2026-08-25' },
-    verified: false,
+    explanation: 'テスト用の解説',
+    source: {
+      name: 'テスト用の資料名',
+      url: 'https://example.com/doc',
+      confirmedDate: '2026-09-13',
+    },
+    verified: true,
     ...overrides,
   };
 }
 
-test('正しい問題データはエラーが出ない', () => {
-  const errors = validateQuestion(makeQuestion());
-  assert.deepEqual(errors, []);
+// 実際の問題データを読み込む小さな道具。
+// 複数のテストで使うので、1か所にまとめておく
+function loadQuestions() {
+  const raw = readFileSync(new URL('../data/questions.json', import.meta.url), 'utf8');
+  return JSON.parse(raw);
+}
+
+// ---------------------------------------------------------------------------
+// 決まりごとの確認
+// ---------------------------------------------------------------------------
+
+test('分野は10種類ある', () => {
+  assert.equal(VALID_CATEGORY_IDS.length, 10);
 });
 
-test('verified が真偽値でないとエラーになる', () => {
-  const errors = validateQuestion(makeQuestion({ verified: 'yes' }));
-  assert.ok(errors.some((e) => e.includes('verified')));
+test('選択肢の必要数は5つ(本番が五肢択一のため)', () => {
+  assert.equal(REQUIRED_CHOICE_COUNT, 5);
 });
 
-test('verified が書かれていないとエラーになる', () => {
-  const q = makeQuestion();
+test('決められた10分野はすべて通る', () => {
+  for (const categoryId of VALID_CATEGORY_IDS) {
+    const errors = validateQuestion(makeValidQuestion({ category: categoryId }));
+    assert.deepEqual(errors, [], `${categoryId} でエラーが出ました`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 1問ずつの検査
+// ---------------------------------------------------------------------------
+
+test('正しい問題ならエラーが出ない', () => {
+  assert.deepEqual(validateQuestion(makeValidQuestion()), []);
+});
+
+test('idが空だとエラーになる', () => {
+  const errors = validateQuestion(makeValidQuestion({ id: '' }));
+  assert.ok(errors.some((e) => e.includes('id')));
+});
+
+test('選択肢が4つだとエラーになる', () => {
+  const errors = validateQuestion(
+    makeValidQuestion({ choices: ['あ', 'い', 'う', 'え'], correctIndex: 0 })
+  );
+  assert.ok(errors.some((e) => e.includes('choices')));
+});
+
+test('選択肢が6つでもエラーになる', () => {
+  const errors = validateQuestion(
+    makeValidQuestion({ choices: ['あ', 'い', 'う', 'え', 'お', 'か'], correctIndex: 0 })
+  );
+  assert.ok(errors.some((e) => e.includes('choices')));
+});
+
+test('同じ選択肢が2つあるとエラーになる', () => {
+  const errors = validateQuestion(
+    makeValidQuestion({ choices: ['あ', 'あ', 'う', 'え', 'お'] })
+  );
+  assert.ok(errors.some((e) => e.includes('同じ選択肢')));
+});
+
+test('分野IDが10種以外だとエラーになる', () => {
+  const errors = validateQuestion(makeValidQuestion({ category: 'cancer' }));
+  assert.ok(errors.some((e) => e.includes('category')));
+});
+
+test('correctIndexが範囲外だとエラーになる', () => {
+  const errors = validateQuestion(makeValidQuestion({ correctIndex: 5 }));
+  assert.ok(errors.some((e) => e.includes('correctIndex')));
+});
+
+test('correctIndexがマイナスだとエラーになる', () => {
+  const errors = validateQuestion(makeValidQuestion({ correctIndex: -1 }));
+  assert.ok(errors.some((e) => e.includes('correctIndex')));
+});
+
+test('correctIndexが小数だとエラーになる', () => {
+  const errors = validateQuestion(makeValidQuestion({ correctIndex: 1.5 }));
+  assert.ok(errors.some((e) => e.includes('correctIndex')));
+});
+
+test('correctIndexが数字でないとエラーになる', () => {
+  const errors = validateQuestion(makeValidQuestion({ correctIndex: NaN }));
+  assert.ok(errors.some((e) => e.includes('correctIndex')));
+});
+
+test('問題文が空だとエラーになる', () => {
+  const errors = validateQuestion(makeValidQuestion({ question: '' }));
+  assert.ok(errors.some((e) => e.includes('question')));
+});
+
+test('解説が空だとエラーになる', () => {
+  const errors = validateQuestion(makeValidQuestion({ explanation: '' }));
+  assert.ok(errors.some((e) => e.includes('explanation')));
+});
+
+test('verifiedが書かれていないとエラーになる', () => {
+  const q = makeValidQuestion();
   delete q.verified;
   const errors = validateQuestion(q);
   assert.ok(errors.some((e) => e.includes('verified')));
 });
 
-test('カテゴリー名の打ち間違いがエラーになる', () => {
-  // 正しくは diabetes。1文字違いでも見逃さないこと
-  const errors = validateQuestion(makeQuestion({ category: 'diabetis' }));
-  assert.ok(errors.some((e) => e.includes('category')));
+test('verifiedが真偽値でないとエラーになる', () => {
+  const errors = validateQuestion(makeValidQuestion({ verified: 'true' }));
+  assert.ok(errors.some((e) => e.includes('verified')));
 });
 
-test('決められた10個のカテゴリーはすべて通る', () => {
-  for (const id of VALID_CATEGORY_IDS) {
-    const errors = validateQuestion(makeQuestion({ category: id }));
-    assert.deepEqual(errors, [], `${id} でエラーが出ました`);
-  }
+// ---------------------------------------------------------------------------
+// 出典の検査。
+// 「裏が取れた」と印を付けた問題には、必ず出典を書かせる
+// ---------------------------------------------------------------------------
+
+test('verifiedがtrueなのに出典URLがないとエラーになる', () => {
+  const errors = validateQuestion(
+    makeValidQuestion({
+      source: { name: '資料名', confirmedDate: '2026-09-13' },
+    })
+  );
+  assert.ok(errors.some((e) => e.includes('source.url')));
 });
 
-test('カテゴリー一覧がcategories.jsonと一致している', () => {
-  const raw = readFileSync(new URL('../data/categories.json', import.meta.url));
-  const idsInFile = JSON.parse(raw).map((c) => c.id);
-  assert.deepEqual([...VALID_CATEGORY_IDS].sort(), idsInFile.sort());
+test('verifiedがtrueなのに出典名がないとエラーになる', () => {
+  const errors = validateQuestion(
+    makeValidQuestion({
+      source: { url: 'https://example.com', confirmedDate: '2026-09-13' },
+    })
+  );
+  assert.ok(errors.some((e) => e.includes('source.name')));
 });
+
+test('verifiedがtrueなのに確認日の形が違うとエラーになる', () => {
+  const errors = validateQuestion(
+    makeValidQuestion({
+      source: { name: '資料名', url: 'https://example.com', confirmedDate: '2026/09/13' },
+    })
+  );
+  assert.ok(errors.some((e) => e.includes('confirmedDate')));
+});
+
+test('出典URLがhttpやhttpsで始まらないとエラーになる', () => {
+  const errors = validateQuestion(
+    makeValidQuestion({
+      source: { name: '資料名', url: 'example.com', confirmedDate: '2026-09-13' },
+    })
+  );
+  assert.ok(errors.some((e) => e.includes('source.url')));
+});
+
+test('verifiedがfalseなら出典がなくてもよい', () => {
+  const q = makeValidQuestion({ verified: false });
+  delete q.source;
+  assert.deepEqual(validateQuestion(q), []);
+});
+
+// ---------------------------------------------------------------------------
+// 全体の検査
+// ---------------------------------------------------------------------------
 
 test('IDが重複しているとエラーになる', () => {
-  const questions = [
-    makeQuestion({ id: 'dup-001' }),
-    makeQuestion({ id: 'dup-001' }),
-  ];
-  const results = validateQuestions(questions);
-  assert.ok(
-    results.some((r) => r.errors.some((e) => e.includes('重複'))),
-    `重複が検出されませんでした: ${JSON.stringify(results)}`
-  );
+  const results = validateQuestions([makeValidQuestion(), makeValidQuestion()]);
+  assert.equal(results.length, 1);
+  assert.ok(results[0].errors.some((e) => e.includes('重複')));
 });
 
 test('IDが重複していなければ通る', () => {
-  const questions = [
-    makeQuestion({ id: 'uniq-001' }),
-    makeQuestion({ id: 'uniq-002' }),
-  ];
-  assert.deepEqual(validateQuestions(questions), []);
+  const results = validateQuestions([
+    makeValidQuestion({ id: 'chemistry-001' }),
+    makeValidQuestion({ id: 'chemistry-002' }),
+  ]);
+  assert.deepEqual(results, []);
 });
 
-test('correctIndexがchoicesの範囲外だとエラーになる', () => {
-  const badQuestion = {
-    id: 'sample-002',
-    category: 'cancer',
-    difficulty: 'beginner',
-    type: 'single',
-    question: 'サンプル問題文',
-    choices: ['A', 'B'],
-    correctIndex: 5,
-    explanation: 'サンプル解説',
-    source: { name: 'サンプル資料', url: '', confirmedDate: '2026-08-25' },
-  };
-  const errors = validateQuestion(badQuestion);
-  assert.ok(errors.some((e) => e.includes('correctIndex')));
+// ---------------------------------------------------------------------------
+// 実際の問題データの検査
+// ---------------------------------------------------------------------------
+
+test('categories.jsonの並びとVALID_CATEGORY_IDSが一致している', () => {
+  const raw = readFileSync(new URL('../data/categories.json', import.meta.url), 'utf8');
+  const categories = JSON.parse(raw);
+  assert.deepEqual(
+    categories.map((c) => c.id),
+    VALID_CATEGORY_IDS
+  );
 });
 
-test('difficultyが不正な値だとエラーになる', () => {
-  const badQuestion = {
-    id: 'sample-003',
-    category: 'cancer',
-    difficulty: 'super-hard',
-    type: 'single',
-    question: 'サンプル問題文',
-    choices: ['A', 'B'],
-    correctIndex: 0,
-    explanation: 'サンプル解説',
-    source: { name: 'サンプル資料', url: '', confirmedDate: '2026-08-25' },
-  };
-  const errors = validateQuestion(badQuestion);
-  assert.ok(errors.some((e) => e.includes('difficulty')));
+test('categories.jsonのすべての分野に名前がついている', () => {
+  const raw = readFileSync(new URL('../data/categories.json', import.meta.url), 'utf8');
+  const categories = JSON.parse(raw);
+  for (const category of categories) {
+    assert.ok(
+      typeof category.name === 'string' && category.name.length > 0,
+      `${category.id} に name がありません`
+    );
+  }
 });
 
-test('correctIndexがNaNだとエラーになる', () => {
-  const badQuestion = {
-    id: 'sample-004',
-    category: 'cancer',
-    difficulty: 'beginner',
-    type: 'single',
-    question: 'サンプル問題文',
-    choices: ['A', 'B', 'C', 'D'],
-    correctIndex: NaN,
-    explanation: 'サンプル解説',
-    source: { name: 'サンプル資料', url: '', confirmedDate: '2026-08-25' },
-  };
-  const errors = validateQuestion(badQuestion);
-  assert.ok(errors.some((e) => e.includes('correctIndex')));
-});
-
-test('correctIndexが小数だとエラーになる', () => {
-  const badQuestion = {
-    id: 'sample-005',
-    category: 'cancer',
-    difficulty: 'beginner',
-    type: 'single',
-    question: 'サンプル問題文',
-    choices: ['A', 'B', 'C', 'D'],
-    correctIndex: 1.5,
-    explanation: 'サンプル解説',
-    source: { name: 'サンプル資料', url: '', confirmedDate: '2026-08-25' },
-  };
-  const errors = validateQuestion(badQuestion);
-  assert.ok(errors.some((e) => e.includes('correctIndex')));
-});
-
-test('本番の問題データ全体が正しい形式になっている', () => {
-  const raw = readFileSync(new URL('../data/questions.json', import.meta.url));
-  const questions = JSON.parse(raw);
-  const results = validateQuestions(questions);
-  assert.deepEqual(results, [], `不正なデータがあります: ${JSON.stringify(results.slice(0, 5))}`);
+test('data/questions.jsonに形式エラーが1件もない', () => {
+  const results = validateQuestions(loadQuestions());
+  // エラーがあったら、どの問題がなぜ駄目かを画面に出す
+  assert.deepEqual(results, [], JSON.stringify(results, null, 2));
 });
 
 test('正解の位置が特定の場所に偏っていない', () => {
-  // 以前のデータは全問「正解が1番目」だった。取り込み時に並び替えたので、
-  // それぞれの位置にだいたい均等に散らばっているはず。
-  // (偏っていると、中身を読まずに位置だけで答えられてしまう)
-  //
-  // 選択肢が4つの問題と、5つの問題(国家試験の必須問題)が混ざっているので、
-  // 「選択肢の数」ごとに分けて偏りを見る。まとめて数えると、
-  // 4択には無い5番目の位置のぶんだけ数が合わなくなってしまう。
-  const raw = readFileSync(new URL('../data/questions.json', import.meta.url));
-  const questions = JSON.parse(raw);
+  /*
+    位置で答えを覚えてしまうのを防ぐためのテストです。
 
-  const countsByLength = new Map();
-  questions.forEach((q) => {
-    const size = q.choices.length;
-    if (!countsByLength.has(size)) countsByLength.set(size, new Array(size).fill(0));
-    countsByLength.get(size)[q.correctIndex] += 1;
+    アプリは表示のたびに選択肢を並び替えるので、遊ぶぶんには偏っていても困りません。
+    ただしデータそのものが「ほぼ1番目が正解」のような作りだと、
+    作問時に無意識の癖が出ている証拠なので、そこを見張ります。
+
+    問題が少ないうちは、たまたま偏ることがあります。
+    50問未満のときは判定せず、数がそろってから見るようにしています。
+  */
+  const questions = loadQuestions();
+  if (questions.length < 50) return;
+
+  const counts = new Array(REQUIRED_CHOICE_COUNT).fill(0);
+  for (const q of questions) counts[q.correctIndex] += 1;
+
+  const expected = questions.length / REQUIRED_CHOICE_COUNT;
+  counts.forEach((count, position) => {
+    assert.ok(
+      count > expected * 0.7 && count < expected * 1.3,
+      `正解が${position + 1}番目の問題が${count}問と偏っています(目安は${Math.round(expected)}問前後)`
+    );
   });
-
-  for (const [size, counts] of countsByLength) {
-    const total = counts.reduce((sum, n) => sum + n, 0);
-    const expected = total / size;
-    counts.forEach((count, position) => {
-      assert.ok(
-        count > expected * 0.7 && count < expected * 1.3,
-        `${size}択のうち、正解が${position}番目の問題が${count}問と偏っています(目安は${Math.round(expected)}問前後)`
-      );
-    });
-  }
 });
