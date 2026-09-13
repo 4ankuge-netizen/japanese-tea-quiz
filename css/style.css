@@ -1573,3 +1573,38 @@ main h2 {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ------------------------------------------------------------------
+   「テキストで要確認」の印
+
+   公開資料で裏付けが取れなかった問題に出す注意書き。
+   目には入るが、問題文より目立たせすぎないよう、
+   塗りつぶさずに枠線だけにしている
+   ------------------------------------------------------------------ */
+.verify-badge {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--cat-default);
+  background: transparent;
+  color: var(--cat-default);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/*
+  隠すときの指定。これが無いと、上の display: inline-block が
+  ブラウザ標準の「hidden なら非表示」という決まりを打ち消してしまい、
+  裏取り済みの問題にも印が出てしまう。
+  (同じ理由で .screen[hidden] も用意されている)
+*/
+.verify-badge[hidden] { display: none; }
+
+/* 解説欄とふりかえり一覧で、裏付けが無いことを示すときの文字色。
+   出典が書いてある場合と見分けがつくようにする */
+.is-unverified {
+  color: var(--cat-default);
+  font-weight: 500;
+}

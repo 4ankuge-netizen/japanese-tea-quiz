@@ -183,6 +183,16 @@ function renderQuestion() {
   progressFill.style.width = `${((currentIndex + 1) / currentSession.length) * 100}%`;
   document.getElementById('question-text').textContent = question.question;
 
+  /*
+    公開資料で裏が取れなかった問題には注意書きを出す。
+
+    協会のテキストを取り込めないため、公開資料だけでは確かめきれない論点が
+    どうしても残る。それを隠して出題すると、間違った内容をそのまま
+    覚えてしまう恐れがある。
+    「ここは自分のテキストで確かめてね」と伝えるための印。
+  */
+  document.getElementById('verify-badge').hidden = question.verified === true;
+
   const bookmarkIds = storage.getBookmarkIds();
   const bookmarkButton = document.getElementById('bookmark-toggle-button');
   bookmarkButton.textContent = bookmarkIds.includes(question.id) ? '★ ブックマーク解除' : '☆ ブックマーク';
@@ -249,24 +259,33 @@ function finishAnswer(question, isCorrect) {
   document.getElementById('answer-feedback').classList.toggle('is-wrong', !isCorrect);
   document.getElementById('feedback-explanation').textContent = question.explanation;
 
-  // 出典を表示する。URLがある場合はクリックできるリンクにする
+  // 出典を表示する。
+  // 裏が取れている問題は出典とURLを、取れていない問題は確認のお願いを出す
   const sourceContainer = document.getElementById('feedback-source');
   sourceContainer.textContent = ''; // 前の問題の表示をクリアする
-  const sourceName = question.source?.name ?? '不明';
-  const sourceUrl = question.source?.url ?? '';
-  // http/httpsのURLだけをリンクにする(他の形式のURLが紛れ込んでも実行されないようにするため)
-  const isSafeUrl = /^https?:\/\//i.test(sourceUrl);
+  sourceContainer.classList.toggle('is-unverified', question.verified !== true);
 
-  sourceContainer.append(`出典: ${sourceName}`);
-  if (isSafeUrl) {
-    sourceContainer.append('(');
-    const link = document.createElement('a');
-    link.href = sourceUrl;
-    link.textContent = sourceUrl;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    sourceContainer.append(link);
-    sourceContainer.append(')');
+  if (question.verified !== true) {
+    // 「出典: 不明」とだけ書くより、何をすればいいかが分かる文にする
+    sourceContainer.textContent =
+      '※ この問題は公開資料で裏付けが取れていません。手元のテキストで確かめてください。';
+  } else {
+    const sourceName = question.source?.name ?? '不明';
+    const sourceUrl = question.source?.url ?? '';
+    // http/httpsのURLだけをリンクにする(他の形式のURLが紛れ込んでも実行されないようにするため)
+    const isSafeUrl = /^https?:\/\//i.test(sourceUrl);
+
+    sourceContainer.append(`出典: ${sourceName}`);
+    if (isSafeUrl) {
+      sourceContainer.append('(');
+      const link = document.createElement('a');
+      link.href = sourceUrl;
+      link.textContent = sourceUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      sourceContainer.append(link);
+      sourceContainer.append(')');
+    }
   }
 
   document.getElementById('answer-feedback').hidden = false;
@@ -370,9 +389,15 @@ function renderResultReview() {
     explanationEl.className = 'review-explanation';
     explanationEl.textContent = question.explanation;
 
+    // ふりかえり一覧でも、裏が取れているかどうかを同じ扱いで示す
     const sourceEl = document.createElement('p');
     sourceEl.className = 'review-source';
-    sourceEl.textContent = `出典: ${question.source?.name ?? '不明'}`;
+    if (question.verified === true) {
+      sourceEl.textContent = `出典: ${question.source?.name ?? '不明'}`;
+    } else {
+      sourceEl.classList.add('is-unverified');
+      sourceEl.textContent = '※ テキストで要確認(公開資料で裏付けが取れていません)';
+    }
 
     body.append(answerEl, explanationEl, sourceEl);
     item.append(summary, body);

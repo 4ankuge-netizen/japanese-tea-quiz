@@ -712,7 +712,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Consumes: Task 3 の `loadData()`（全問を `allQuestions` に入れる）
 - Produces: 画面上の要素 `#verify-badge`。`verified !== true` の問題を表示中のみ見える
 
-- [ ] **Step 1: index.html にバッジの置き場所を足す**
+- [x] **Step 1: index.html にバッジの置き場所を足す**
 
 `<section id="quiz-screen">` の中、`<h2 id="question-text"></h2>` の**直前**に挿入する。
 
@@ -722,7 +722,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
       <p id="verify-badge" class="verify-badge" hidden>※ テキストで要確認</p>
 ```
 
-- [ ] **Step 2: renderQuestion でバッジの出し入れをする**
+- [x] **Step 2: renderQuestion でバッジの出し入れをする**
 
 `renderQuestion()` 内、`document.getElementById('question-text').textContent = question.question;` の**直後**に挿入する。
 
@@ -738,7 +738,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
   document.getElementById('verify-badge').hidden = question.verified === true;
 ```
 
-- [ ] **Step 3: finishAnswer の出典表示を書き替える**
+- [x] **Step 3: finishAnswer の出典表示を書き替える**
 
 `finishAnswer()` 内の出典表示部分を次のとおり置き換える。
 
@@ -771,7 +771,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
   }
 ```
 
-- [ ] **Step 4: css/style.css にバッジの見た目を足す**
+- [x] **Step 4: css/style.css にバッジの見た目を足す**
 
 ファイル末尾に追記する。
 
@@ -792,7 +792,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 }
 ```
 
-- [ ] **Step 5: ブラウザで動きを確かめる**
+- [x] **Step 5: ブラウザで動きを確かめる**
 
 `data/questions.json` に確認用として次の2問だけを入れる。
 
@@ -828,11 +828,11 @@ npm start
 ブラウザで開き、「茶の歴史」を選んで2問とも表示する。
 期待: 1問目にはバッジが出ず、2問目には「※ テキストで要確認」が出る。2問目の解説欄に「公開資料で裏付けが取れていません」と出る。
 
-- [ ] **Step 6: 確認用の問題を消して空に戻す**
+- [x] **Step 6: 確認用の問題を消して空に戻す**
 
 `data/questions.json` を `[]` に戻す。
 
-- [ ] **Step 7: テストを実行する**
+- [x] **Step 7: テストを実行する**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -841,7 +841,7 @@ node --test
 
 期待: PASS。
 
-- [ ] **Step 8: コミット**
+- [x] **Step 8: コミット**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -1345,6 +1345,14 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ---
 
 ## Task 6: 日本茶らしい見た目とPWAの設定
+
+> **実行時の追記(2026-09-13):** Task 3 で消した画面・ボタンのCSSが約71行分
+> `css/style.css` に残っている(`#other-difficulty-button` `difficulty` `profile` `report-`
+> `share-` `is-query` `#export` `teacher` を含む行)。このタスクで一緒に掃除すること。
+>
+> **注意:** `hidden` で隠す要素に `display` を指定すると、ブラウザ標準の
+> 「hidden なら非表示」という決まりを打ち消してしまう。Task 4 で実際にこの事故が起きた。
+> 隠す要素には必ず `[hidden] { display: none; }` を併記すること。
 
 **Files:**
 - Modify: `css/style.css`
