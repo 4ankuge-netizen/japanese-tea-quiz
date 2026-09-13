@@ -1608,3 +1608,32 @@ main h2 {
   color: var(--cat-default);
   font-weight: 500;
 }
+
+/* ------------------------------------------------------------------
+   模試モードの残り時間
+
+   ふだんの出題では隠している(hidden)。
+   display を指定しているので、隠す指定を必ず併記すること。
+   これが無いと hidden が効かず、ふだんの出題でも残り時間が出てしまう
+   ------------------------------------------------------------------ */
+.mock-timer {
+  margin: 0;
+  /* 数字の幅をそろえて、1秒ごとに文字がガタつかないようにする */
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--cat-default);
+}
+
+.mock-timer[hidden] { display: none; }
+
+/* 残り5分を切ったら赤くして知らせる */
+.mock-timer.is-urgent { color: var(--vermillion, #C1544C); }
+
+/* 模試の結果に出す分野別の成績表 */
+#mock-category-result[hidden] { display: none; }
+/* 中身は正答率画面と同じ .stats-row を使うので、並べ方もそろえる */
+#mock-category-list { display: flex; flex-direction: column; gap: 9px; }
+
+/* 次の見出し(今回の問題をふりかえる)と近すぎないよう、下に余白を取る */
+#mock-category-result { margin-bottom: 26px; }

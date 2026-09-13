@@ -34,6 +34,8 @@
       <h2>分野を選んでください</h2>
       <div id="category-list"></div>
       <button id="weak-point-button">間違えた問題だけ復習する</button>
+      <!-- 本番と同じように、時間を計って通しで解くモード -->
+      <button id="mock-exam-button">本番形式の模試に挑戦する（50問・75分）</button>
     </section>
 
     <section id="quiz-screen" class="screen" hidden>
@@ -41,6 +43,8 @@
            判子はこの帯の中だけに出るので、問題文や選択肢の上に重なることがない -->
       <div class="quiz-topbar">
         <p id="quiz-progress"></p>
+        <!-- 模試のときだけ出る残り時間。ふだんの出題では隠しておく -->
+        <p id="mock-timer" class="mock-timer" hidden></p>
         <div id="hanko-slot"></div>
       </div>
       <!-- 何問目まで来たかを棒の長さで示すバー。中の緑の部分をJavaScriptで伸ばす -->
@@ -80,6 +84,12 @@
           <span class="result-chip is-wrong">不正解 <b id="result-wrong-count">0</b></span>
         </div>
         <p id="result-comment"></p>
+      </div>
+
+      <!-- 模試のときだけ出る、分野別の成績表。どの分野に穴があるかを一目で分かるようにする -->
+      <div id="mock-category-result" hidden>
+        <h3 class="section-title">分野別の成績</h3>
+        <div id="mock-category-list"></div>
       </div>
 
       <!-- 今回出た問題の一覧。1行ずつ開くと解説を読み返せる -->

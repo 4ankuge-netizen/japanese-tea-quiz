@@ -10,6 +10,12 @@ import {
 } from './quiz-engine.js';
 import { createStorage } from './storage.js';
 import { computeCategoryAccuracy, summarizeAccuracy } from './stats.js';
+import {
+  MOCK_EXAM_QUESTION_COUNT,
+  remainingSeconds,
+  formatRemaining,
+  gradeMockExam,
+} from './mock-exam.js';
 
 const storage = createStorage(window.localStorage);
 
@@ -37,6 +43,12 @@ let answeredInSession = new Map();
 let lastQuizStarter = null;
 // 結果画面の見出しに出す分野名(「茶の化学」など)
 let sessionLabel = '';
+// 今が模試モードかどうか。模試のときは途中で正誤も解説も出さない
+let isMockExam = false;
+// 模試を始めた時刻(ミリ秒)。残り時間の計算に使う
+let mockStartedAtMs = 0;
+// 1秒ごとに残り時間を書き替えるためのタイマーの番号。止めるときに使う
+let mockTimerId = null;
 // 今表示している選択肢の並びと、その中で正解が何番目か。
 // 表示のたびに並び替えるため、正解の位置は問題データではなくこちらを見る
 let currentChoices = null;
@@ -116,7 +128,10 @@ function renderHome() {
     button.append(nameEl, countEl);
     // 分野を選んだら、そのまま10問の出題を始める。
     // 本番の試験に難易度の区分はないため、難易度を選ぶ画面は設けていない
-    button.addEventListener('click', () => startQuiz({ categoryId: category.id }));
+    button.addEventListener('click', () => {
+      endMockExam();
+      startQuiz({ categoryId: category.id });
+    });
     list.appendChild(button);
   });
 }
@@ -156,6 +171,124 @@ function startWeakPointQuiz() {
     starter: startWeakPointQuiz,
     label: '間違えた問題だけ復習',
   });
+}
+
+
+/*
+  模試モードを始める。
+
+  ふだんの出題との違いは3つ。
+    1. 分野を選ばず、全分野からまとめて出す
+    2. 1問ごとの正誤と解説を出さない(本番と同じ)
+    3. 残り時間を表示し、0になったら自動で採点する
+*/
+function startMockExam() {
+  const pool = filterQuestions(allQuestions, {});
+
+  // 問題が1問も無いときは、タイマーを動かさずに案内だけ出す
+  if (pool.length === 0) {
+    endMockExam();
+    beginSession({
+      pool: [],
+      emptyMessage: 'まだ問題がありません。',
+      starter: startMockExam,
+      label: '模試',
+    });
+    return;
+  }
+
+  isMockExam = true;
+  currentSession = pickRandomQuestions(pool, MOCK_EXAM_QUESTION_COUNT);
+  currentIndex = 0;
+  sessionCorrectCount = 0;
+  answeredInSession = new Map();
+  emptySessionMessage = 'まだ問題がありません。';
+  lastQuizStarter = startMockExam;
+  sessionLabel = '模試（' + currentSession.length + '問）';
+
+  mockStartedAtMs = Date.now();
+  startMockTimer();
+  showScreen('quiz-screen');
+}
+
+// 1秒ごとに残り時間を書き替える。0になったら自動で結果画面へ進む
+function startMockTimer() {
+  const timer = document.getElementById('mock-timer');
+  timer.hidden = false;
+
+  function tick() {
+    const left = remainingSeconds(mockStartedAtMs, Date.now());
+    timer.textContent = '残り ' + formatRemaining(left);
+    // 残り5分を切ったら色を変えて知らせる
+    timer.classList.toggle('is-urgent', left <= 5 * 60);
+    if (left <= 0) {
+      stopMockTimer();
+      showScreen('result-screen');
+    }
+  }
+
+  tick(); // すぐ1回表示してから、以降は1秒ごとに書き替える
+  mockTimerId = setInterval(tick, 1000);
+}
+
+// タイマーを止めて、残り時間の表示を隠す。
+// 止め忘れると、模試を抜けたあとも裏で動き続けて勝手に画面が切り替わってしまう
+function stopMockTimer() {
+  if (mockTimerId !== null) {
+    clearInterval(mockTimerId);
+    mockTimerId = null;
+  }
+  const timer = document.getElementById('mock-timer');
+  timer.hidden = true;
+  timer.classList.remove('is-urgent');
+}
+
+// 模試をやめる。別の画面へ移るときに呼ぶ
+function endMockExam() {
+  isMockExam = false;
+  stopMockTimer();
+}
+
+// 模試の結果画面に、分野別の成績表を出す。
+// どの分野に穴があるかを一目で分かるようにするためのもの
+function renderMockCategoryResult() {
+  const box = document.getElementById('mock-category-result');
+  if (!isMockExam) {
+    box.hidden = true;
+    return;
+  }
+
+  const graded = gradeMockExam(currentSession, answeredInSession, categories);
+  const list = document.getElementById('mock-category-list');
+  list.innerHTML = '';
+
+  // 見た目は「正答率」画面と同じ形(分野名・棒グラフ・パーセント)にそろえる。
+  // 同じ意味の情報が場所によって違う見た目で出ると、読むたびに戸惑うため
+  graded.byCategory.forEach((row) => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'stats-row';
+    applyCategoryColor(rowEl, row.categoryId); // 棒の色をホーム画面のカードと揃える
+    rowEl.title = row.correct + ' / ' + row.total + ' 問正解';
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'stats-name';
+    nameEl.textContent = row.categoryName;
+
+    const trackEl = document.createElement('div');
+    trackEl.className = 'bar-track';
+    const fillEl = document.createElement('div');
+    fillEl.className = 'bar-fill';
+    fillEl.style.width = row.accuracyPercent + '%';
+    trackEl.appendChild(fillEl);
+
+    const pctEl = document.createElement('span');
+    pctEl.className = 'stats-pct';
+    pctEl.textContent = row.accuracyPercent + '%';
+
+    rowEl.append(nameEl, trackEl, pctEl);
+    list.appendChild(rowEl);
+  });
+  box.hidden = false;
 }
 
 function renderQuestion() {
@@ -215,6 +348,17 @@ function onAnswer(question, selectedIndex, selectedButton) {
   // 正解かどうかは、今表示している並びの中での位置で判定する
   const isCorrect = checkAnswer(currentChoices, selectedIndex);
 
+  /*
+    模試のときは、正誤の色も解説も出さずにそのまま次の問題へ進む。
+    本番のマークシートと同じで、その場では答え合わせができない。
+    ここで色を見せてしまうと、あとの問題を解く集中の仕方が本番と変わってしまう。
+  */
+  if (isMockExam) {
+    recordAnswer(question, isCorrect);
+    onNextQuestion();
+    return;
+  }
+
   // 選んだボタンと、正解のボタンに色をつける
   const buttons = document.querySelectorAll('#choice-list button');
   buttons[currentChoices.correctIndex].classList.add('correct');
@@ -230,18 +374,26 @@ function onAnswer(question, selectedIndex, selectedButton) {
   「どのボタンに色を付けるか」は呼び出す側で済ませておき、
   ここでは共通の処理だけを行う
 */
-function finishAnswer(question, isCorrect) {
+/*
+  成績を記録する。ふだんの出題でも模試でも、ここだけは同じことをする。
+  違うのは「そのあと正誤を見せるかどうか」だけなので、記録の部分を切り出してある。
+*/
+function recordAnswer(question, isCorrect) {
   // 同じ問題を1回の出題の中で二度答えた場合、成績を二重に数えない。
   // (画面を切り替えて戻ってきたときに、もう一度答えられてしまうため)
-  if (!answeredInSession.has(question.id)) {
-    answeredInSession.set(question.id, isCorrect);
-    if (isCorrect) sessionCorrectCount += 1;
+  if (answeredInSession.has(question.id)) return;
 
-    const today = getTodayLocalDate();
-    storage.recordAnswer(question.id, isCorrect, today);
-    storage.updateStreakOnAnswer(today);
-    renderStreak();
-  }
+  answeredInSession.set(question.id, isCorrect);
+  if (isCorrect) sessionCorrectCount += 1;
+
+  const today = getTodayLocalDate();
+  storage.recordAnswer(question.id, isCorrect, today);
+  storage.updateStreakOnAnswer(today);
+  renderStreak();
+}
+
+function finishAnswer(question, isCorrect) {
+  recordAnswer(question, isCorrect);
 
   // 正解したときだけ、問題番号の横に判子(はんこ)が押される演出を出す
   if (isCorrect) {
@@ -295,6 +447,8 @@ function onNextQuestion() {
   currentIndex += 1;
   // 最後の問題まで解き終えたら、1問目に戻さず結果画面を出す
   if (currentIndex >= currentSession.length) {
+    // 模試はここで時間を止める(結果を見ている間もタイマーが動くのを防ぐ)
+    if (isMockExam) stopMockTimer();
     showScreen('result-screen');
     return;
   }
@@ -340,6 +494,7 @@ function renderResult() {
     commentEl.textContent = '解説を読み返してから、もう一度解いてみましょう。間違えた問題は「間違えた問題だけ復習する」にたまっています。';
   }
 
+  renderMockCategoryResult();
   renderResultReview();
 }
 
@@ -493,16 +648,27 @@ function renderStreak() {
 
 function setupNav() {
   document.querySelectorAll('.app-nav button').forEach((button) => {
-    button.addEventListener('click', () => showScreen(button.dataset.screen));
+    button.addEventListener('click', () => {
+      // 模試の途中で上のタブを押したら、模試はそこで終わり
+      endMockExam();
+      showScreen(button.dataset.screen);
+    });
   });
-  document.getElementById('weak-point-button').addEventListener('click', startWeakPointQuiz);
+  document.getElementById('weak-point-button').addEventListener('click', () => {
+    endMockExam();
+    startWeakPointQuiz();
+  });
+  document.getElementById('mock-exam-button').addEventListener('click', startMockExam);
   document.getElementById('next-question-button').addEventListener('click', onNextQuestion);
   document.getElementById('bookmark-toggle-button').addEventListener('click', onToggleBookmark);
   // 結果画面のボタン
   document.getElementById('retry-button').addEventListener('click', () => {
     if (lastQuizStarter) lastQuizStarter(); // 直前と同じ内容をもう一度出題する
   });
-  document.getElementById('back-home-button').addEventListener('click', () => showScreen('home-screen'));
+  document.getElementById('back-home-button').addEventListener('click', () => {
+    endMockExam();
+    showScreen('home-screen');
+  });
 }
 
 async function init() {

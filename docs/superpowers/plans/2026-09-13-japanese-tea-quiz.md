@@ -875,7 +875,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
   - `formatRemaining(seconds: number): string` … `"MM:SS"` 形式
   - `gradeMockExam(questions, resultsById: Map<string, boolean>, categories): { total, correct, accuracyPercent, byCategory: {categoryId, categoryName, total, correct, accuracyPercent}[] }`
 
-- [ ] **Step 1: 失敗するテストを書く**
+- [x] **Step 1: 失敗するテストを書く**
 
 `tests/mock-exam.test.js` を新規作成する。
 
@@ -982,7 +982,7 @@ test('問題が0問でも落ちない', () => {
 });
 ```
 
-- [ ] **Step 2: テストを実行して失敗することを確認する**
+- [x] **Step 2: テストを実行して失敗することを確認する**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -991,7 +991,7 @@ node --test tests/mock-exam.test.js
 
 期待: FAIL。`js/mock-exam.js` が存在しないためモジュールが読めない。
 
-- [ ] **Step 3: js/mock-exam.js を作る**
+- [x] **Step 3: js/mock-exam.js を作る**
 
 ```javascript
 // 模試モードの計算だけを行う部品です。
@@ -1061,7 +1061,7 @@ export function gradeMockExam(questions, resultsById, categories) {
 }
 ```
 
-- [ ] **Step 4: テストを実行して全部通ることを確認する**
+- [x] **Step 4: テストを実行して全部通ることを確認する**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -1070,7 +1070,7 @@ node --test tests/mock-exam.test.js
 
 期待: PASS（12件すべて）。
 
-- [ ] **Step 5: コミット（計算部分だけ先に入れる）**
+- [x] **Step 5: コミット（計算部分だけ先に入れる）**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -1083,7 +1083,7 @@ git commit -m "feat: 模試モードの計算部分(残り時間と採点)を追
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
 
-- [ ] **Step 6: index.html に模試のボタンと画面を足す**
+- [x] **Step 6: index.html に模試のボタンと画面を足す**
 
 ホーム画面の `weak-point-button` の**直後**に追加する。
 
@@ -1109,7 +1109,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
       </div>
 ```
 
-- [ ] **Step 7: js/app.js に模試モードをつなぎ込む**
+- [x] **Step 7: js/app.js に模試モードをつなぎ込む**
 
 import に追加する。
 
@@ -1271,7 +1271,7 @@ function onNextQuestion() {
   document.getElementById('mock-exam-button').addEventListener('click', startMockExam);
 ```
 
-- [ ] **Step 8: css/style.css に残り時間の見た目を足す**
+- [x] **Step 8: css/style.css に残り時間の見た目を足す**
 
 ファイル末尾に追記する。
 
@@ -1290,7 +1290,7 @@ function onNextQuestion() {
 }
 ```
 
-- [ ] **Step 9: ブラウザで模試の動きを確かめる**
+- [x] **Step 9: ブラウザで模試の動きを確かめる**
 
 `data/questions.json` に確認用の問題を3問入れる（分野を2種類にする）。
 
@@ -1315,11 +1315,11 @@ npm start
 4. ホームに戻ると残り時間の表示が消える
 5. ふだんの出題（分野を選ぶ）では残り時間が出ず、正誤と解説がちゃんと出る
 
-- [ ] **Step 10: 確認用の問題を消して空に戻す**
+- [x] **Step 10: 確認用の問題を消して空に戻す**
 
 `data/questions.json` を `[]` に戻す。
 
-- [ ] **Step 11: テストを実行する**
+- [x] **Step 11: テストを実行する**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
@@ -1328,7 +1328,7 @@ node --test
 
 期待: PASS。
 
-- [ ] **Step 12: コミット**
+- [x] **Step 12: コミット**
 
 ```bash
 cd "/c/Users/kokky/OneDrive/デスクトップ/.claude/japanese tea"
