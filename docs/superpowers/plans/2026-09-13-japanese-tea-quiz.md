@@ -139,7 +139,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
   - `validateQuestions(questions): {id: string, errors: string[]}[]` … エラーのある問題だけ返す
   - `data/categories.json` … `[{id, name}]` の配列。Task 3・6・7・8 が参照する
 
-> **実行時の追記(2026-09-13):** コピー元の  には
+> **実行時の追記(2026-09-13):** コピー元の `tests/validate-questions.test.js` には
 > 「正解の位置が特定の場所に偏っていない」という自動テストが入っていた。
 > 計画では Task 7/8 で手動コマンドとして数える予定だったが、自動テストの方が確実なので
 > 下のテストファイルに五肢択一版として引き継ぐ。手動コマンドは補助扱いにする。
